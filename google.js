@@ -8,6 +8,7 @@ const passport = require("passport");
 const fs = require("fs");
 const GoogleStrategy = require("passport-google-oauth2").Strategy;
 const bodyParser = require('body-parser');
+const mysql = require('mysql');
 
 const app = express();
 const server = http.createServer(app);
@@ -38,6 +39,11 @@ app.use(
         saveUninitialized: false,
     })
 );
+
+// mysql 연결
+let db = mysql.createConnection(options);
+db.connect();
+
 //
 app.use(bodyParser.urlencoded({ extended: true }));
 
@@ -113,6 +119,13 @@ app.get("/", (req, res) => {
 });
 
 app.post('/sendNickname', (req, res) => {
+    let post = req.body;
+    db.query('UPDATE aim_user_info SET nickname=? WHERE id=?', [post.nickname, 4294967295], function(error, result){
+        if (error) {
+            throw error;
+        }
+    });
+
     console.log('Got body:', req.body);
     res.sendStatus(200);
 });
