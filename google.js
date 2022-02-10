@@ -7,6 +7,7 @@ const MySQLStore = require("express-mysql-session")(session);
 const passport = require("passport");
 const fs = require("fs");
 const GoogleStrategy = require("passport-google-oauth2").Strategy;
+const bodyParser = require('body-parser');
 
 const app = express();
 const server = http.createServer(app);
@@ -37,6 +38,9 @@ app.use(
         saveUninitialized: false,
     })
 );
+//
+app.use(bodyParser.urlencoded({ extended: true }));
+
 // image 사용을 위한 static folder 지정
 app.use(express.static("public"));
 
@@ -97,7 +101,7 @@ app.get("/login", (req, res) => {
 // 로그인 하지 않은 회원이라면(session 정보가 존재하지 않는다면) login화면으로 리다이렉트
 app.get("/", (req, res) => {
     if (!req.user) return res.redirect("/login");
-    fs.readFile("./webpage/main.html", (error, data) => {
+    fs.readFile("./webpage/selectCharacter.html", (error, data) => {
         if (error) {
             console.log(error);
             return res.sendStatus(500);
@@ -107,6 +111,12 @@ app.get("/", (req, res) => {
         res.end(data);
     });
 });
+
+app.post('/sendNickname', (req, res) => {
+    console.log('Got body:', req.body);
+    res.sendStatus(200);
+});
+
 
 // google login 화면
 app.get(
