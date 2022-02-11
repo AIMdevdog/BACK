@@ -33,10 +33,16 @@ const sessionStore = new MySQLStore(options);
 // express session 연결
 app.use(
     session({
-        secret: "secret key",
+        httpOnly: true,	//자바스크립트를 통해 세션 쿠키를 사용할 수 없도록 함
+        secure: true,	//https 환경에서만 session 정보를 주고받도록처리
+        secret: "secret key",   //암호화하는 데 쓰일 키
         store: sessionStore,
-        resave: false,
-        saveUninitialized: false,
+        resave: false,  //세션을 언제나 저장할지 설정함
+        saveUninitialized: false,   //세션이 저장되기 전 uninitialized 상태로 미리 만들어 저장
+        cookie: {   //세션 쿠키 설정 (세션 관리 시 클라이언트에 보내는 쿠키)
+            httpOnly: true,
+            originalMaxAge: 60*30,      // 1초 단위로 세션 유효시간 설정. 60 * 30 = 30분
+        }
     })
 );
 
@@ -86,7 +92,7 @@ passport.use(
                 }
                 
                 if (result.length === 0) {
-                    db.query('INSERT INTO aim_user_info (session_id, email) VALUES(?,?)', [request.session.passport.user, profile.email], function(error2, result){
+                    db.query('INSERT INTO aim_user_info (email, session_id) VALUES(?,?)', [profile.email, request.session.passport.user], function(error2, result){
                         if (error2) {
                             throw error2;
                         }
@@ -106,8 +112,6 @@ passport.use(
 // 이미 로그인한 회원이라면(session 정보가 존재한다면) main화면으로 리다이렉트
 app.get("/login", (req, res) => {
     if (req.user) {
-        // 닉네임, 캐릭터 정보를 조회하는 쿼리
-
         return res.redirect("/");
     }
     
