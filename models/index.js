@@ -4,7 +4,7 @@
 // const path = require('path');
 const Sequelize = require('sequelize');
 const Aim_user_info = require('./aim_user_info');
-const Map_images = require('./map_images');
+const Aim_map_images = require('./aim_map_images');
 // const basename = path.basename(__filename);
 const env = process.env.NODE_ENV || 'development';
 const config = require('../config/config')[env];
@@ -40,12 +40,12 @@ db.Sequelize = Sequelize;
 //생성한 models을 models/index.js와 연결
 
 db.Aim_user_info = Aim_user_info;
-db.Map_images = Map_images;
+db.Aim_map_images = Aim_map_images;
 
 Aim_user_info.init(sequelize);
-Map_images.init(sequelize);
+Aim_map_images.init(sequelize);
 
 Aim_user_info.associate(db);
-Map_images.associate(db);
+Aim_map_images.associate(db);
 
 module.exports = db;

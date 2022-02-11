@@ -1,5 +1,5 @@
 const Sequelize =require('sequelize');
-const Map_images = require('../models/map_images');
+const Aim_map_images = require('../models/aim_map_images');
 
 module.exports = class Aim_user_info extends Sequelize.Model {
     static init(sequelize) {
@@ -44,6 +44,6 @@ module.exports = class Aim_user_info extends Sequelize.Model {
         });
     }
     static associate(db) {
-        db.Aim_user_info.hasMany(db.Map_images, { foreignKey: 'host_id', sourceKey:'id'});
+        db.Aim_user_info.hasMany(db.Aim_map_images, { foreignKey: 'host_id', sourceKey:'id'});
     }
 };
