@@ -25,26 +25,29 @@ router.post("/auth/google", async function (req, res, next) {
   // => 수정 필요 :
   try {
     const { accessToken, email } = req.body;
-    let findUser = await Aim_user_info.findOne({
+    const findUser = await Aim_user_info.findOne({
       where: {
-        accessToken,
+        email,
       },
     });
     if (!findUser) {
-      findUser = Aim_user_info.create({
+      const result = findUser.create({
         accessToken: accessToken,
         email: email,
       });
       res.json({
         code: 200,
-        data: findUser,
+        data: result,
         msg: "회원 가입이 완료됐습니다.",
       });
     } else {
+      findUser.update({
+        accessToken,
+      });
       res.json({
         code: 200,
         data: findUser,
-        msg: "로그인이 되어있습니다.",
+        msg: "로그인이 되었습니다.",
       });
     }
   } catch (e) {
@@ -54,19 +57,18 @@ router.post("/auth/google", async function (req, res, next) {
 
 /* GET users listing. */
 router.post("/update/profile", async function (req, res) {
-  var { accessToken, nickname, character } = req.body;
+  const { accessToken, nickname, character } = req.body;
   // console.log("success");
   try {
     //여기의 버튼은 회원가입이 안되어있으면 못들어오는 페이지 => email check 안해도 될 듯함
-    const checkToken = await Aim_user_info.findOne({
+    const findUser = await Aim_user_info.findOne({
       where: { accessToken },
     });
-    console.log(checkToken.accessToken);
-    if (checkToken.accessToken) {
+    if (findUser) {
       //token checked
       //update user_info in DB
 
-      await checkToken.update({
+      await findUser.update({
         nickname,
         character,
       });
@@ -87,16 +89,16 @@ router.post("/update/profile", async function (req, res) {
 
 /* GET users listing. */
 router.post("/get/userinfo", async function (req, res) {
-  var { accessToken } = req.body;
+  const { accessToken } = req.body;
   try {
     //여기의 버튼은 회원가입이 안되어있으면 못들어오는 페이지 => email check 안해도 될 듯함
-    const checkToken = await Aim_user_info.findOne({
+    const findUser = await Aim_user_info.findOne({
       where: { accessToken },
     });
-    if (checkToken) {
+    if (findUser) {
       res.json({
         code: 200,
-        data: checkToken,
+        data: findUser,
       });
     } else {
       res.json({
