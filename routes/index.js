@@ -3,6 +3,7 @@ var router = express.Router();
 
 //DB 정보
 const { Aim_user_info } = require("../models");
+const authUser = require("./middlewares/authUser");
 
 /* GET home page. */
 // router.get('/', function(req, res, next) {
@@ -83,8 +84,8 @@ router.get("/lobby", async (req, res) => {
 });
 
 //방 클릭
-router.post("/lobby/send/char", async (req, res) => {
-  var { accessToken } = req.body;
+router.post("/lobby/send/char", authUser, async (req, res) => {
+  const { accessToken } = req.user;
   try {
     //여기의 버튼은 회원가입이 안되어있으면 못들어오는 페이지 => email check 안해도 될 듯함
     const checkToken = await Aim_user_info.findOne({
@@ -92,15 +93,9 @@ router.post("/lobby/send/char", async (req, res) => {
     });
     if (checkToken) {
       const char_image = await Aim_character_image.findAll({});
-      res.json({
-        code: 200,
-        data: char_image,
-      });
+      res.status(200).json(char_image);
     } else {
-      res.json({
-        code: 400,
-        msg: "토큰이 만료됐습니다.",
-      });
+      res.status(400);
     }
   } catch (e) {
     console.log(e);
