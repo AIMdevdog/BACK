@@ -30,25 +30,17 @@ router.post("/auth/google", async function (req, res, next) {
         email,
       },
     });
-    if (!findUser) {
-      const result = findUser.create({
-        accessToken: accessToken,
-        email: email,
-      });
-      res.json({
-        code: 200,
-        data: result,
-        msg: "회원 가입이 완료됐습니다.",
-      });
-    } else {
-      findUser.update({
+    if (findUser) {
+      const result = findUser.update({
         accessToken,
       });
-      res.json({
-        code: 200,
-        data: findUser,
-        msg: "로그인이 되었습니다.",
+      res.status(200).json(result);
+    } else {
+      const result = Aim_user_info.create({
+        accessToken,
+        email,
       });
+      res.status(200).json(result);
     }
   } catch (e) {
     console.log(e);

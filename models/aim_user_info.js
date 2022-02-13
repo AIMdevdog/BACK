@@ -1,5 +1,4 @@
 const Sequelize = require("sequelize");
-const Aim_map_images = require("../models/aim_map_images");
 
 module.exports = class Aim_user_info extends Sequelize.Model {
   static init(sequelize) {

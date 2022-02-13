@@ -41,10 +41,10 @@ module.exports = class Aim_map_images extends Sequelize.Model {
       }
     );
   }
-  static associate(db) {
-    db.Aim_map_images.belongsTo(db.Aim_user_info, {
-      foreignKey: "hostId",
-      targetKey: "id",
-    });
-  }
+  // static associate(db) {
+  //   db.Aim_map_images.belongsTo(db.Aim_user_info, {
+  //     foreignKey: "hostId",
+  //     targetKey: "id",
+  //   });
+  // }
 };

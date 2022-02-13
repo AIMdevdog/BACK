@@ -1,31 +1,30 @@
 const Sequelize = require("sequelize");
-const Aim_character_image = require("./aim_character_image");
 
-module.exports = class Aim_user_info extends Sequelize.Model {
+module.exports = class Aim_character_images extends Sequelize.Model {
   static init(sequelize) {
     return super.init(
       {
-        images: {
+        image: {
           type: Sequelize.STRING(512),
-          defaultValue: NULL,
+          defaultValue: "NULL",
         },
       },
       {
         sequelize,
         timestamps: true,
         underscored: false,
-        modelName: "Aim_user_info",
-        tableName: "aim_user_info",
+        modelName: "Aim_character_images",
+        tableName: "aim_character_images",
         paranoid: false,
         charset: "utf8",
         collate: "utf8_general_ci",
       }
     );
   }
-  static associate(db) {
-    db.Aim_user_info.hasMany(db.Aim_map_images, {
-      foreignKey: "hostId",
-      sourceKey: "id",
-    });
-  }
+  //   static associate(db) {
+  //     db.Aim_user_info.hasMany(db.Aim_map_images, {
+  //       foreignKey: "hostId",
+  //       sourceKey: "id",
+  //     });
+  //   }
 };

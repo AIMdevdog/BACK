@@ -4,16 +4,18 @@ const MySQLStore = require("express-mysql-session")(session);
 const passport = require("passport");
 const cors = require("cors");
 const fs = require("fs");
-var createError = require("http-errors");
-var express = require("express");
-var path = require("path");
-var cookieParser = require("cookie-parser");
-var logger = require("morgan");
+const createError = require("http-errors");
+const express = require("express");
+const path = require("path");
+const cookieParser = require("cookie-parser");
+const logger = require("morgan");
 const { sequelize } = require("./models");
 
-var indexRouter = require("./routes/index");
-var usersRouter = require("./routes/users");
-var roomRouter = require("./routes/room");
+const indexRouter = require("./routes/index");
+const usersRouter = require("./routes/users");
+const roomRouter = require("./routes/room");
+const characterRouter = require("./routes/characters");
+const userRoomRouter = require("./routes/userRoom");
 
 const app = express();
 
@@ -51,6 +53,8 @@ app.use(express.static(path.join(__dirname, "public")));
 
 app.use("/users", usersRouter);
 app.use("/room", roomRouter);
+app.use("/character", characterRouter);
+app.use("/userRoom", userRoomRouter);
 app.use("/", indexRouter);
 
 // catch 404 and forward to error handler
