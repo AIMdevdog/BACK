@@ -24,7 +24,8 @@
     "passport-google-oauth2": "^0.2.0",
     "pm2": "^5.1.2",
     "sequelize": "^6.16.1",
-    "sequelize-cli": "^6.4.1"
+    "sequelize-cli": "^6.4.1",
+    "socket.io": "^4.4.1"
   },
   "devDependencies": {
     "nodemon": "^2.0.15"
