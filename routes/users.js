@@ -31,16 +31,16 @@ router.post("/auth/google", async function (req, res, next) {
       },
     });
     if (findUser) {
-      const result = findUser.update({
+      const result = await findUser.update({
         accessToken,
       });
-      res.status(200).json(result);
+      res.json(result);
     } else {
-      const result = Aim_user_info.create({
+      const result = await Aim_user_info.create({
         accessToken,
         email,
       });
-      res.status(200).json(result);
+      res.json(result);
     }
   } catch (e) {
     console.log(e);
