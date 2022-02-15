@@ -20,8 +20,7 @@ const userRoomRouter = require("./routes/userRoom");
 const app = express();
 
 const httpServer = http.createServer(app);
-const PORT = 5000;
-const HOST = "0.0.0.0";
+const PORT = 3000;
 const io = require("socket.io")(httpServer, {
   cors: {
     origin: ["https://dev-team-aim.com:*"],
@@ -124,7 +123,7 @@ app.use(function (err, req, res, next) {
   res.render("error");
 });
 
-httpServer.listen(PORT, HOST, () => {
+httpServer.listen(PORT, () => {
   console.log(`Server running on ${PORT}`);
 });
 
