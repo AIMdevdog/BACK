@@ -27,9 +27,15 @@ const io = require("socket.io")(httpServer, {
     methods: ["GET", "POST"],
     transports: ["websocket", "polling"],
     credentials: true,
+    maxHttpBufferSize: "1e6",
+    methods: ["GET", "POST"],
+    allowedHeaders: ["Access-Control-Allow-Origin"],
+    credentials: false,
   },
   allowEIO3: true,
 });
+
+// console.log(io);
 
 // express앱과 MySQL을 연결
 sequelize
