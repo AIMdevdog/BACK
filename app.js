@@ -268,51 +268,6 @@ io.on("connection", function (socket) {
     socket.to(roomName).emit("chat", message);
   });
 
-  // socket.on("user_call", ({caller, callee}) => {
-  //   const DuplCheck = video_call_stack?.filter((item) => item.caller === caller && item.callee === callee)
-
-  //   if (DuplCheck.length === 0) {
-  //     video_call_stack.push({
-  //       caller,
-  //       callee
-  //     });
-  //     console.log(video_call_stack);
-  //   }
-  //   //video_call_stack : [ {Caller1, Callee}, {Caller1, Callee},,,, ]
-  //   //input : { '4TD7oabReWtFetOOAAAO', 'MxzUNhfFivHmFQoQAAAG' }
-  //   const result = video_call_stack.shift();
-  //   console.log(result.caller, result.callee);
-
-  //   //caller 방만든다.
-
-  // });
-  // video_call_stack
-  // socket.on("disconnecting", () => {
-  //   socket.to(myRoomName).emit("leave_room", socket.id, myNickname);
-
-  //   let isRoomEmpty = false;
-  //   for (let i = 0; i < roomObjArr.length; ++i) {
-  //     if (roomObjArr[i].roomName === myRoomName) {
-  //       const newUsers = roomObjArr[i].users.filter(
-  //         (user) => user.socketId != socket.id
-  //       );
-  //       roomObjArr[i].users = newUsers;
-  //       --roomObjArr[i].currentNum;
-
-  //       if (roomObjArr[i].currentNum == 0) {
-  //         isRoomEmpty = true;
-  //       }
-  //     }
-  //   }
-
-  //   // Delete room
-  //   if (isRoomEmpty) {
-  //     const newRoomObjArr = roomObjArr.filter(
-  //       (roomObj) => roomObj.currentNum != 0
-  //     );
-  //     roomObjArr = newRoomObjArr;
-  //   }
-  // });
   /////////////////////////////////////////////////////////////
 
   let newUser = joinGame(socket);
