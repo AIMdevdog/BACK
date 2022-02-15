@@ -270,55 +270,6 @@ io.on("connection", function (socket) {
     y: newUser.y,
   });
 
-
-  // 의미없어보임 (삭제 예정)
-  // let myRoomName = null;
-  // let myNickname = null;
-
-  socket.on("join_room", (roomName, nickname) => {
-    // 의미없어보임 (삭제 예정)
-    // myRoomName = roomName;
-    // myNickname = nickname;
-
-    let isRoomExist = false;
-    let targetRoomObj = null;
-
-    // forEach를 사용하지 않는 이유: callback함수를 사용하기 때문에 return이 효용없음.
-    for (let i = 0; i < roomObjArr.length; ++i) {
-      if (roomObjArr[i].roomName === roomName) {
-        // Reject join the room
-        if (roomObjArr[i].currentNum >= MAXIMUM) {
-          socket.emit("reject_join");
-          return;
-        }
-
-        isRoomExist = true;
-        targetRoomObj = roomObjArr[i];
-        break;
-      }
-    }
-
-    // Create room
-    if (!isRoomExist) {
-      targetRoomObj = {
-        roomName,
-        currentNum: 0,
-        users: [],
-      };
-      roomObjArr.push(targetRoomObj);
-    }
-
-    //Join the room
-    targetRoomObj.users.push({
-      socketId: socket.id,
-      nickname,
-    });
-    ++targetRoomObj.currentNum;
-
-    socket.join(roomName);
-    socket.emit("accept_join", targetRoomObj.users);
-  });
-
   /*//////////////////
   ms
   ** socket.on("join_room", (roomName, nickname)내에 room관련 정보들은 소켓 룸이며, 로비의 룸이 아니므로 따로 이벤트를 생성해야함.
@@ -408,14 +359,17 @@ io.on("connection", function (socket) {
   });
 
   socket.on("offer", (offer, remoteSocketId, localNickname) => {
+    console.log("offer 실행", remoteSocketId, localNickname);
     socket.to(remoteSocketId).emit("offer", offer, socket.id, localNickname);
   });
 
   socket.on("answer", (answer, remoteSocketId) => {
+    console.log("answer 실행", remoteSocketId);
     socket.to(remoteSocketId).emit("answer", answer, socket.id);
   });
 
   socket.on("ice", (ice, remoteSocketId) => {
+    console.log("ice 실행", remoteSocketId);
     socket.to(remoteSocketId).emit("ice", ice, socket.id);
   });
 
@@ -463,7 +417,7 @@ function makeGroup(groupName, socket, nickname) {
     } ],
   };
   groupObjArr.push(initGroupObj);
-  // 0
+  // console.log(groupObjArr);
   // return targetGroupObj;
   socket.join(groupName);
   socket.emit("accept_join", [1]);
