@@ -25,7 +25,7 @@ const PORT = process.env.PORT || 8000;
 
 const io = require("socket.io")(httpServer, {
   cors: {
-    origin: ["https://dev-team-aim.com", "http://localhost:3000"],
+    origin: "*",
     methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
     preflightContinue: false,
     optionsSuccessStatus: 204,
@@ -45,7 +45,7 @@ sequelize
 
 // image 사용을 위한 static folder 지정
 let corsOption = {
-  origin: "https://dev-team-aim.com/", // 허락하는 요청 주소
+  origin: "*/", // 허락하는 요청 주소
   credentials: true, // true로 하면 설정한 내용을 response 헤더에 추가 해줍니다.
 };
 
