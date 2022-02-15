@@ -308,7 +308,7 @@ io.on("connection", function (socket) {
   
   socket.on("makegroup", (groupName, caller, callee) => {
     var nickname = "Anon";
-    var groupName = 0;
+    var groupName = '0';
     makeGroup(groupName, caller, nickname);
   });
 
@@ -316,7 +316,7 @@ io.on("connection", function (socket) {
     const DuplCheck = video_call_stack?.filter(
       (item) => item.caller === caller && item.callee === callee
     );
-    console.log("***DuplCheck***", DuplCheck) // 초깃값 []로 들어감
+    // console.log("***DuplCheck***", DuplCheck) // 초깃값 []로 들어감
 
     if (DuplCheck.length === 0) {
       video_call_stack.push({
@@ -372,36 +372,53 @@ io.on("connection", function (socket) {
   //   socket.to(roomName).emit("chat", message);
   // });
 
-  socket.on("disconnected", () => {
-    console.log(groupObjArr)
-    socket.to(groupObjArr.groupName).emit("leave_room", socket.id, groupObjArr.nickname);
+  // socket.on("disconnected", () => {
+  //   // console.log(groupObjArr)
+  //   // socket.to(groupObjArr.groupName).emit("leave_Group", socket.id);
 
-    let isRoomEmpty = false;
-    for (let i = 0; i < roomObjArr.length; ++i) {
-      if (roomObjArr[i].roomName === groupObjArr.groupName) {
-        const newUsers = roomObjArr[i].users.filter(
-          (user) => user.socketId != socket.id
-        );
-        roomObjArr[i].users = newUsers;
-        --roomObjArr[i].currentNum;
+  //   let isRoomEmpty = false;
+  //   for (let i = 0; i < roomObjArr.length; ++i) {
+  //     if (roomObjArr[i].roomName === groupObjArr.groupName) {
+  //       const newUsers = roomObjArr[i].users.filter(
+  //         (user) => user.socketId != socket.id
+  //       );
+  //       roomObjArr[i].users = newUsers;
+  //       --roomObjArr[i].currentNum;
 
-        if (roomObjArr[i].currentNum == 0) {
-          isRoomEmpty = true;
+  //       if (roomObjArr[i].currentNum == 0) {
+  //         isRoomEmpty = true;
+  //       }
+  //     }
+  //   }
+
+  //   // Delete room
+  //   if (isRoomEmpty) {
+  //     const newRoomObjArr = roomObjArr.filter(
+  //       (roomObj) => roomObj.currentNum != 0
+  //     );
+  //     roomObjArr = newRoomObjArr;
+  //   }
+  // });
+
+  socket.on("leave_Group", (sId) => {
+    console.log("________ㅠㅠ 멀어졌다..____________", sId) // player.id로 groupObjArr에서 roomName찾기
+    for (let i = 0; i < groupObjArr.length; ++i) {
+      // console.log(groupObjArr[i].groupName)
+
+      for (let j = 0; j < groupObjArr[i].users.length; ++j) {
+        console.log(groupObjArr[i].users[j].socketId)
+
+        // 거리가 멀어질 player의 sid로 화상통화 그룹 정보에 저장된 동일한 sid를 찾아서 그룹에서 삭제해준다
+        if (sId === groupObjArr[i].users[j].socketId) {
+          console.log('***', groupObjArr[i].users)
+          socket.leave(groupObjArr[i].groupName) // socket Room 에서 삭제
+          groupObjArr[i].users.splice(j,1) // 우리가 따로 저장했던 배열에서도 삭제
+          console.log('*지웠나 체크*', groupObjArr[i].users)
         }
-      }
     }
-
-    // Delete room
-    if (isRoomEmpty) {
-      const newRoomObjArr = roomObjArr.filter(
-        (roomObj) => roomObj.currentNum != 0
-      );
-      roomObjArr = newRoomObjArr;
-    }
-  });
-
-  socket.on("leave_Group", (groupName) => {
-    console.log(groupObjArr) // groupObjArr를 보고 거기서 해당되는 그룹네임을 빼고싶다
+  }
+    console.log("____________leave_group____________")
+    
     // unGroup(groupName, socket, nickname);
   });
 });
@@ -443,7 +460,7 @@ function joinGroup(groupName, socket, nickname) {
       });
       ++groupObjArr[i].currentNum;
       
-      console.log('방 사용자들', groupObjArr[i].users);
+      // console.log('방 사용자들', groupObjArr[i].users);
       socket.join(groupName);
       socket.emit("accept_join", groupObjArr[i].users);
     }
