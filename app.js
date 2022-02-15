@@ -23,7 +23,7 @@ const httpServer = http.createServer(app);
 const PORT = 8000;
 const io = require("socket.io")(httpServer, {
   cors: {
-    origin: "*",
+    origin: "https://dev-team-aim.com",
     methods: ["GET", "POST"],
     transports: ["websocket", "polling"],
     credentials: true,
