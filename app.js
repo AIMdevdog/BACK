@@ -42,7 +42,7 @@ sequelize
 
 // image 사용을 위한 static folder 지정
 let corsOption = {
-  origin: "http://18.116.38.147:3000/", // 허락하는 요청 주소
+  origin: "https://dev-team-aim.com/", // 허락하는 요청 주소
   credentials: true, // true로 하면 설정한 내용을 response 헤더에 추가 해줍니다.
 };
 
