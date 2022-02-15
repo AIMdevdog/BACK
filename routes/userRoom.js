@@ -1,5 +1,5 @@
 const express = require("express");
-const app = require("../server");
+const app = require("../app");
 const router = express.Router();
 
 //DB 정보
