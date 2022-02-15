@@ -22,16 +22,19 @@ const app = express();
 const httpServer = http.createServer(app);
 const PORT = 8000;
 const io = require("socket.io")(httpServer, {
-  maxHttpBufferSize: 100000000,
-  connectTimeout: 5000,
-  transports: ["websocket", "polling"],
-  pingInterval: 25 * 1000,
-  pingTimeout: 5000,
-  allowEIO3: true,
   cors: {
-    origin: "*",
+    origin: ["https://dev-team-aim.com:*"],
     methods: ["GET", "POST"],
-    credentials: true,
+    transports: ["websocket", "polling"],
+    autoConnect: true,
+    pingInterval: 25000,
+    pingTimeout: 180000,
+  },
+  allowEIO3: true,
+  cookie: {
+    name: "domainio",
+    httpOnly: false,
+    secure: true,
   },
 });
 
