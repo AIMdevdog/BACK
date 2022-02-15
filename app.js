@@ -125,13 +125,14 @@ class GameObject {
     this.direction = [];
     this.Buffer = [];
     this.src = null;
+    this.groupNumber = 0;
     // this.src = "https://dynamic-assets.gather.town/sprite/avatar-M8h5xodUHFdMzyhLkcv9-IJzSdBMLblNeA34QyMJg-qskNbC9Z4FBsCfj5tQ1i-KqnHZDZ1tsvV3iIm9RwO-g483WRldPrpq2XoOAEhe-sb7g6nQb3ZYxzNHryIbM.png";
   }
   get id() {
     return this.socket.id;
   }
   pushInput(data) {
-    this.Buffer.unshift(data);
+    this.Buffer.push(data);
   }
   update_location() {
     const input = this.Buffer.shift();
@@ -199,7 +200,7 @@ function updateGame() {
     // ball.handleInput(timeRate);
   }
 
-  setTimeout(updateGame, 32);
+  setTimeout(updateGame, 16);
 }
 
 function broadcastState() {
@@ -217,7 +218,7 @@ function broadcastState() {
 
   io.sockets.emit("update_state", data);
 
-  setTimeout(broadcastState, 32);
+  setTimeout(broadcastState, 16);
 }
 
 updateGame();
@@ -369,6 +370,7 @@ io.on("connection", function (socket) {
     const DuplCheck = video_call_stack?.filter(
       (item) => item.caller === caller && item.callee === callee
     );
+    //아래 이름 바꾸기!
 
     if (DuplCheck.length === 0) {
       video_call_stack.push({
@@ -376,11 +378,27 @@ io.on("connection", function (socket) {
         callee,
       });
     }
+
+    const user_caller = charMap[caller]
+    const user_callee = charMap[callee]
     // video_call_stack : [ {Caller1, Callee}, {Caller1, Callee},,,, ]
     // input : { '4TD7oabReWtFetOOAAAO', 'MxzUNhfFivHmFQoQAAAG' }
-    const result = video_call_stack.shift();
+    // const result = video_call_stack.shift();
     
+    //callee의 방이 있으면 그냥 참가 함수(caller)
+    if(user_callee.groupNumber)
+    {
+      joinGroup(user_callee.groupNumber, user_caller.socket, "ANON");
+    }else{
+      makeGroup(user_caller.groupNumber, user_caller.socket, "ANON");
+      joinGroup(user_caller.groupNumber, user_callee.socket, "ANON")  
+    }
+    //성공하면 이거 설정 필요
 
+    // user_caller.groupNumber = true;
+    // user_callee.groupNumber = true;
+    
+    // function makeGroup(groupName, socket, nickname)
 
     //caller 방만든다.
 
@@ -401,9 +419,9 @@ io.on("connection", function (socket) {
     socket.to(remoteSocketId).emit("ice", ice, socket.id);
   });
 
-  socket.on("chat", (message, roomName) => {
-    socket.to(roomName).emit("chat", message);
-  });
+  // socket.on("chat", (message, roomName) => {
+  //   socket.to(roomName).emit("chat", message);
+  // });
 
   // socket.on("disconnecting", () => {
   //   socket.to(myRoomName).emit("leave_room", socket.id, myNickname);
@@ -435,37 +453,42 @@ io.on("connection", function (socket) {
 
 //when caller make the room
 function makeGroup(groupName, socket, nickname) {
+  console.log("실행 makeGroup");
   initGroupObj = {
     groupName,
     currentNum: 0,
-    users: {
+    users: [ {
       socketId: socket.id,
       nickname
-    },
+    } ],
   };
   groupObjArr.push(initGroupObj);
+  // 0
   // return targetGroupObj;
   socket.join(groupName);
-  socket.emit("accept_join", targetGroupObj.users);
+  socket.emit("accept_join", [1]);
 }
 //when callee join the room
-function joinGroup(groupName, socket) {
+function joinGroup(groupName, socket, nickname) {
+  console.log("실행 joinGroup");
   for (let i = 0; i < groupObjArr.length; ++i) {
     if (groupObjArr[i].groupName === groupName) {
       // Reject join the room
+      
       if (groupObjArr[i].currentNum >= MAXIMUM) {
         socket.emit("reject_join");
         return;
       }
       //Join the room
-      targetGroupObj.users.push({
+      groupObjArr[i].users.push({
         socketId: socket.id,
         nickname,
       });
-      ++targetGroupObj.currentNum;
-
+      ++groupObjArr[i].currentNum;
+      
+      console.log('*****방 사용자들', groupObjArr[i].users);
       socket.join(groupName);
-      socket.emit("accept_join", targetGroupObj.users);
+      socket.emit("accept_join", groupObjArr[i].users);
     }
   }
 }
