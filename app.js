@@ -359,23 +359,20 @@ io.on("connection", function (socket) {
   });
 
   socket.on("offer", (offer, remoteSocketId, localNickname) => {
-    console.log("offer 실행", remoteSocketId, localNickname);
     socket.to(remoteSocketId).emit("offer", offer, socket.id, localNickname);
   });
 
   socket.on("answer", (answer, remoteSocketId) => {
-    console.log("answer 실행", remoteSocketId);
     socket.to(remoteSocketId).emit("answer", answer, socket.id);
   });
 
   socket.on("ice", (ice, remoteSocketId) => {
-    console.log("ice 실행", remoteSocketId);
     socket.to(remoteSocketId).emit("ice", ice, socket.id);
   });
 
-  // socket.on("chat", (message, roomName) => {
-  //   socket.to(roomName).emit("chat", message);
-  // });
+  socket.on("chat", (message, roomName) => {
+    socket.to(roomName).emit("chat", message);
+  });
 
   // socket.on("disconnecting", () => {
   //   socket.to(myRoomName).emit("leave_room", socket.id, myNickname);
@@ -417,8 +414,6 @@ function makeGroup(groupName, socket, nickname) {
     } ],
   };
   groupObjArr.push(initGroupObj);
-  // console.log(groupObjArr);
-  // return targetGroupObj;
   socket.join(groupName);
   socket.emit("accept_join", [1]);
 }
@@ -440,13 +435,10 @@ function joinGroup(groupName, socket, nickname) {
       });
       ++groupObjArr[i].currentNum;
       
-      console.log('*****방 사용자들', groupObjArr[i].users);
       socket.join(groupName);
       socket.emit("accept_join", groupObjArr[i].users);
     }
   }
 }
-
-
 
 module.exports = app;
