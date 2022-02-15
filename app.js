@@ -25,7 +25,10 @@ const PORT = process.env.PORT || 8000;
 
 const io = require("socket.io")(httpServer, {
   cors: {
-    origin: "https://dev-team-aim.com/",
+    origin: ["https://dev-team-aim.com", "http://localhost:3000"],
+    methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
+    preflightContinue: false,
+    optionsSuccessStatus: 204,
     credentials: true,
   },
 });
