@@ -124,7 +124,7 @@ app.use(function (err, req, res, next) {
   res.render("error");
 });
 
-httpServer.listen(PORT, HOST, () => {
+httpServer.listen(process.env.PORT || 3000, HOST, () => {
   console.log(`Server running on ${PORT}`);
 });
 
