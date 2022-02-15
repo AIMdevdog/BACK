@@ -24,8 +24,11 @@ const PORT = 8000;
 const io = require("socket.io")(httpServer, {
   cors: {
     origin: "*",
+    methods: ["GET", "POST"],
+    transports: ["websocket", "polling"],
     credentials: true,
   },
+  allowEIO3: true,
 });
 
 // express앱과 MySQL을 연결
@@ -39,10 +42,10 @@ sequelize
   });
 
 // image 사용을 위한 static folder 지정
-let corsOption = {
-  origin: "http://18.116.38.147:3000/", // 허락하는 요청 주소
-  credentials: true, // true로 하면 설정한 내용을 response 헤더에 추가 해줍니다.
-};
+// let corsOption = {
+//   origin: "http://18.116.38.147:3000/", // 허락하는 요청 주소
+//   credentials: true, // true로 하면 설정한 내용을 response 헤더에 추가 해줍니다.
+// };
 
 /* 전역 변수 */
 let characters = []; //character socketID list
@@ -77,7 +80,7 @@ let groupObjArr = [
   // },
 ];
 
-app.use(cors(corsOption));
+app.use(cors());
 app.use(express.static("public"));
 
 // view engine setup
@@ -307,10 +310,6 @@ io.on("connection", function (socket) {
   caller가 방을 만들고, callee가 그룹에 참여하면 된다. 
   //////////////////*/
 
-  
-
-  
-
   socket.on("makegroup", (groupName, caller, callee) => {
     var nickname = "Anon";
     var groupName = 0;
@@ -330,25 +329,24 @@ io.on("connection", function (socket) {
       });
     }
 
-    const user_caller = charMap[caller]
-    const user_callee = charMap[callee]
+    const user_caller = charMap[caller];
+    const user_callee = charMap[callee];
     // video_call_stack : [ {Caller1, Callee}, {Caller1, Callee},,,, ]
     // input : { '4TD7oabReWtFetOOAAAO', 'MxzUNhfFivHmFQoQAAAG' }
     // const result = video_call_stack.shift();
-    
+
     //callee의 방이 있으면 그냥 참가 함수(caller)
-    if(user_callee.groupNumber)
-    {
+    if (user_callee.groupNumber) {
       joinGroup(user_callee.groupNumber, user_caller.socket, "ANON");
-    }else{
+    } else {
       makeGroup(user_caller.groupNumber, user_caller.socket, "ANON");
-      joinGroup(user_caller.groupNumber, user_callee.socket, "ANON")  
+      joinGroup(user_caller.groupNumber, user_callee.socket, "ANON");
     }
     //성공하면 이거 설정 필요
 
     // user_caller.groupNumber = true;
     // user_callee.groupNumber = true;
-    
+
     // function makeGroup(groupName, socket, nickname)
 
     //caller 방만든다.
@@ -411,10 +409,12 @@ function makeGroup(groupName, socket, nickname) {
   initGroupObj = {
     groupName,
     currentNum: 0,
-    users: [ {
-      socketId: socket.id,
-      nickname
-    } ],
+    users: [
+      {
+        socketId: socket.id,
+        nickname,
+      },
+    ],
   };
   groupObjArr.push(initGroupObj);
   // console.log(groupObjArr);
@@ -428,7 +428,7 @@ function joinGroup(groupName, socket, nickname) {
   for (let i = 0; i < groupObjArr.length; ++i) {
     if (groupObjArr[i].groupName === groupName) {
       // Reject join the room
-      
+
       if (groupObjArr[i].currentNum >= MAXIMUM) {
         socket.emit("reject_join");
         return;
@@ -439,14 +439,12 @@ function joinGroup(groupName, socket, nickname) {
         nickname,
       });
       ++groupObjArr[i].currentNum;
-      
-      console.log('*****방 사용자들', groupObjArr[i].users);
+
+      console.log("*****방 사용자들", groupObjArr[i].users);
       socket.join(groupName);
       socket.emit("accept_join", groupObjArr[i].users);
     }
   }
 }
-
-
 
 module.exports = app;
