@@ -59,7 +59,7 @@ router.get("/lobby", async (req, res) => {
         `SELECT * FROM map_images`,
         function (error, result, fields) {
           if (error) throw error;
-          else if (result?.length) {
+          else if (result.length) {
             res.json({
               code: 200,
               data: result,
