@@ -50,8 +50,7 @@ let charMap = {}; //character information (x,y 등등)
 
 /* for group call */
 const groupCallName = 0; //CallName for temp
-const MAXIMUM = 5; //Call maximun
-//roomObjArr는 오해의 소지가 있어 groupObjArr로 변경 예정
+const MAXIMUM = 5; //Call maximum
 let roomObjArr = [
   // {
   //   roomName,
@@ -76,6 +75,7 @@ let groupObjArr = [
   //   ],
   // },
 ];
+
 
 app.use(cors(corsOption));
 app.use(express.static("public"));
@@ -242,7 +242,6 @@ io.on("connection", function (socket) {
   let newUser = joinGame(socket);
   socket.on("send_user_src", function (data) {
     const nUser = charMap[data.id];
-    // console.log(nUser);
     nUser.src = data.src;
     for (let i = 0; i < characters.length; i++) {
       let user = characters[i];
@@ -271,7 +270,6 @@ io.on("connection", function (socket) {
   });
 
   /*//////////////////
-  ms
   ** socket.on("join_room", (roomName, nickname)내에 room관련 정보들은 소켓 룸이며, 로비의 룸이 아니므로 따로 이벤트를 생성해야함.
 
   1. caller가 방 만들게 한다. (방 번호는 1번 부터 : global 변수 roomName)
@@ -285,8 +283,7 @@ io.on("connection", function (socket) {
   3. 방원 -> 서버 -> 방장 (add ice)
   4. 방장 -> 서버 -> 방원 (add ice) 
 
-  
-  
+
   const groupCallName = 0; //CallName for temp
   const MAXIMUM = 5; //Call maximun
   let roomObjArr = [
@@ -302,15 +299,13 @@ io.on("connection", function (socket) {
     // },
   ];
 
+
   makeGroup함수를 만들어서 
   caller, callee 들어올때마다 
   caller가 방을 만들고, callee가 그룹에 참여하면 된다. 
   //////////////////*/
 
   
-
-  
-
   socket.on("makegroup", (groupName, caller, callee) => {
     var nickname = "Anon";
     var groupName = 0;
@@ -321,7 +316,7 @@ io.on("connection", function (socket) {
     const DuplCheck = video_call_stack?.filter(
       (item) => item.caller === caller && item.callee === callee
     );
-    //아래 이름 바꾸기!
+    console.log("***DuplCheck***", DuplCheck) // 초깃값 []로 들어감
 
     if (DuplCheck.length === 0) {
       video_call_stack.push({
@@ -377,37 +372,45 @@ io.on("connection", function (socket) {
   //   socket.to(roomName).emit("chat", message);
   // });
 
-  // socket.on("disconnecting", () => {
-  //   socket.to(myRoomName).emit("leave_room", socket.id, myNickname);
+  socket.on("disconnected", () => {
+    console.log(groupObjArr)
+    socket.to(groupObjArr.groupName).emit("leave_room", socket.id, groupObjArr.nickname);
 
-  //   let isRoomEmpty = false;
-  //   for (let i = 0; i < roomObjArr.length; ++i) {
-  //     if (roomObjArr[i].roomName === myRoomName) {
-  //       const newUsers = roomObjArr[i].users.filter(
-  //         (user) => user.socketId != socket.id
-  //       );
-  //       roomObjArr[i].users = newUsers;
-  //       --roomObjArr[i].currentNum;
+    let isRoomEmpty = false;
+    for (let i = 0; i < roomObjArr.length; ++i) {
+      if (roomObjArr[i].roomName === groupObjArr.groupName) {
+        const newUsers = roomObjArr[i].users.filter(
+          (user) => user.socketId != socket.id
+        );
+        roomObjArr[i].users = newUsers;
+        --roomObjArr[i].currentNum;
 
-  //       if (roomObjArr[i].currentNum == 0) {
-  //         isRoomEmpty = true;
-  //       }
-  //     }
-  //   }
+        if (roomObjArr[i].currentNum == 0) {
+          isRoomEmpty = true;
+        }
+      }
+    }
 
-  //   // Delete room
-  //   if (isRoomEmpty) {
-  //     const newRoomObjArr = roomObjArr.filter(
-  //       (roomObj) => roomObj.currentNum != 0
-  //     );
-  //     roomObjArr = newRoomObjArr;
-  //   }
-  // });
+    // Delete room
+    if (isRoomEmpty) {
+      const newRoomObjArr = roomObjArr.filter(
+        (roomObj) => roomObj.currentNum != 0
+      );
+      roomObjArr = newRoomObjArr;
+    }
+  });
+
+  socket.on("leave_Group", (groupName) => {
+    console.log(groupObjArr) // groupObjArr를 보고 거기서 해당되는 그룹네임을 빼고싶다
+    // unGroup(groupName, socket, nickname);
+  });
 });
+
+  
 
 //when caller make the room
 function makeGroup(groupName, socket, nickname) {
-  console.log("실행 makeGroup");
+  console.log("makeGroup");
   initGroupObj = {
     groupName,
     currentNum: 0,
@@ -424,7 +427,7 @@ function makeGroup(groupName, socket, nickname) {
 }
 //when callee join the room
 function joinGroup(groupName, socket, nickname) {
-  console.log("실행 joinGroup");
+  console.log("joinGroup");
   for (let i = 0; i < groupObjArr.length; ++i) {
     if (groupObjArr[i].groupName === groupName) {
       // Reject join the room
@@ -440,12 +443,40 @@ function joinGroup(groupName, socket, nickname) {
       });
       ++groupObjArr[i].currentNum;
       
-      console.log('*****방 사용자들', groupObjArr[i].users);
+      console.log('방 사용자들', groupObjArr[i].users);
       socket.join(groupName);
       socket.emit("accept_join", groupObjArr[i].users);
     }
   }
 }
+
+function clearAllVideos() {
+  const streamArr = streams.querySelectorAll("div");
+  console.log("### clearAllVideos", streams.querySelectorAll("div"))
+  console.log("### clearAllVideos", streamArr)
+  
+  streamArr.forEach((streamElement) => {
+    if (streamElement.id != "myStream") {
+      streams.removeChild(streamElement);
+    }
+  });
+}
+
+function unGroup(groupName, socket, nickname) {
+  console.log("unGroup");
+  // console.log(groupObjArr)
+
+  myStream.getTracks().forEach((track) => track.stop());
+
+  myFace.srcObject = null;
+  clearAllVideos();
+  clearAllChat();
+
+  groupObjArr.pop(groupName);
+  // return targetGroupObj;
+  // socket.join(groupName);
+  // socket.emit("accept_join", [1]);
+};
 
 
 
