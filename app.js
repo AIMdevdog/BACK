@@ -45,6 +45,8 @@ let corsOption = {
   credentials: true, // true로 하면 설정한 내용을 response 헤더에 추가 해줍니다.
 };
 
+const roomName = 0;
+
 app.use(cors(corsOption));
 app.use(express.static("public"));
 
@@ -82,9 +84,22 @@ app.use(function (err, req, res, next) {
 httpServer.listen(PORT, () => {
   console.log(`Server running on ${PORT}`);
 });
+/*//////////////////
+ms
+** socket.on("join_room", (roomName, nickname)내에 room관련 정보들은 소켓 룸이며, 로비의 룸이 아니므로 따로 이벤트를 생성해야함.
 
+1. caller가 방 만들게 한다. (방 번호는 1번 부터 : global 변수 roomName)
+2. 방장(socketID)있으면 방장에게 방을 만들면 돼. (socket.join(roomName))
+3. 방원(socketID)을 이용해서 서버가 방원에게 offer정보를 만들라고 emit으로 시킨다.
+  3-1. 방장이 만든 방 정보(roomName: 방장이 만든..)까지 같이 넘겨야되겠지? OK
+ 
+peer-to-peer
+1. 방원 -> 서버 -> 방장 (offer)
+2. 방장 -> 서버 -> 방원 (answer)
+3. 방원 -> 서버 -> 방장 (add ice)
+4. 방장 -> 서버 -> 방원 (add ice) 
 
-///////////////////
+//////////////////*/
 
 const video_call_stack = [];
 
@@ -180,7 +195,6 @@ class GameObject {
     //   ],
     // },
   ];
-  const MAXIMUM = 5;  
 
   io.on("connection", function (socket) {
     console.log(`${socket.id} has joined!`);
@@ -209,7 +223,6 @@ class GameObject {
       // },
     ];
     const MAXIMUM = 5;
-    
     
       let myRoomName = null;
       let myNickname = null;
@@ -275,23 +288,26 @@ class GameObject {
         socket.to(roomName).emit("chat", message);
       });
 
-      // socket.on("user_call", ({caller, callee}) => {
-      //   const DuplCheck = video_call_stack?.filter((item) => item.caller === caller && item.callee === callee)
+      socket.on("user_call", ({caller, callee}) => {
+        const DuplCheck = video_call_stack?.filter((item) => item.caller === caller && item.callee === callee)
         
-      //   if (DuplCheck.length === 0) {
-      //     video_call_stack.push({
-      //       caller,
-      //       callee
-      //     });
-      //     console.log(video_call_stack);
-      //   }
-      //   //video_call_stack : [ {Caller1, Callee}, {Caller1, Callee},,,, ]
-      //   //input : { '4TD7oabReWtFetOOAAAO', 'MxzUNhfFivHmFQoQAAAG' }
-      //   const result = video_call_stack.shift();
-      //   console.log(result.caller, result.callee);
+        if (DuplCheck.length === 0) {
+          video_call_stack.push({
+            caller,
+            callee
+          });
+          console.log(video_call_stack);
+        }
+        //video_call_stack : [ {Caller1, Callee}, {Caller1, Callee},,,, ]
+        //input : { '4TD7oabReWtFetOOAAAO', 'MxzUNhfFivHmFQoQAAAG' }
+        const result = video_call_stack.shift();
+        console.log(result.caller, result.callee);
 
-      //   //caller 방만든다. 
-        
+        //caller 방만든다. 
+
+        /* 현재 소켓의 룸넘버가 0이면 가까운 아무나 소켓의 룸넘버에 접근해서 그 룸에 해당 소켓을 넣게 한다 (룸넘버->클로저챗) (소켓에 필드추가)
+         * 
+         */
 
 
 
