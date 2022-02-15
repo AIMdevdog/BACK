@@ -21,7 +21,8 @@ const app = express();
 
 const httpServer = http.createServer(app);
 // const wsServer = new Server(httpServer);
-const PORT = 8000;
+const PORT = process.env.PORT || 8000;
+
 const io = require("socket.io")(httpServer, {
   cors: {
     origin: "*",
