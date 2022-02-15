@@ -20,13 +20,12 @@ const userRoomRouter = require("./routes/userRoom");
 const app = express();
 
 const httpServer = http.createServer(app);
-// const wsServer = new Server(httpServer);
 const PORT = 8000;
-const io = require('socket.io')(httpServer, {
+const io = require("socket.io")(httpServer, {
   cors: {
-      origin: "*",
-      credentials: true
-  }
+    origin: "*",
+    credentials: true,
+  },
 });
 
 // express앱과 MySQL을 연결
@@ -41,11 +40,11 @@ sequelize
 
 // image 사용을 위한 static folder 지정
 let corsOption = {
-  origin: "http://localhost:3000", // 허락하는 요청 주소
+  origin: "http://18.116.38.147:3000/", // 허락하는 요청 주소
   credentials: true, // true로 하면 설정한 내용을 response 헤더에 추가 해줍니다.
 };
 
-const roomName = 0;
+const groupName = 0;
 
 app.use(cors(corsOption));
 app.use(express.static("public"));
@@ -84,339 +83,310 @@ app.use(function (err, req, res, next) {
 httpServer.listen(PORT, () => {
   console.log(`Server running on ${PORT}`);
 });
-/*//////////////////
-ms
-** socket.on("join_room", (roomName, nickname)내에 room관련 정보들은 소켓 룸이며, 로비의 룸이 아니므로 따로 이벤트를 생성해야함.
-
-1. caller가 방 만들게 한다. (방 번호는 1번 부터 : global 변수 roomName)
-2. 방장(socketID)있으면 방장에게 방을 만들면 돼. (socket.join(roomName))
-3. 방원(socketID)을 이용해서 서버가 방원에게 offer정보를 만들라고 emit으로 시킨다.
-  3-1. 방장이 만든 방 정보(roomName: 방장이 만든..)까지 같이 넘겨야되겠지? OK
- 
-peer-to-peer
-1. 방원 -> 서버 -> 방장 (offer)
-2. 방장 -> 서버 -> 방원 (answer)
-3. 방원 -> 서버 -> 방장 (add ice)
-4. 방장 -> 서버 -> 방원 (add ice) 
-
-//////////////////*/
 
 const video_call_stack = [];
 
 class GameObject {
-    constructor(socket) {
-      this.socket = socket;
-      this.x = 80;
-      this.y = 80;
-      this.direction = [];
-      this.Buffer = [];
-      this.src = null;
-      // this.src = "https://dynamic-assets.gather.town/sprite/avatar-M8h5xodUHFdMzyhLkcv9-IJzSdBMLblNeA34QyMJg-qskNbC9Z4FBsCfj5tQ1i-KqnHZDZ1tsvV3iIm9RwO-g483WRldPrpq2XoOAEhe-sb7g6nQb3ZYxzNHryIbM.png";
-    }
-    get id() {
-      return this.socket.id;
-    }
-    pushInput(data) {
-      this.Buffer.unshift(data);
-    }
-    update_location() {
-      const input = this.Buffer.shift();
-      // console.log(input)
-      if (this.Buffer.length > 0 ) {
-        this.direction.unshift(input.direction);
-        if(this.x !== input.x){
-          this.x = input.x;
-        }
-        if(this.y !== input.y){
-        this.y = input.y;
-        }
- 
+  constructor(socket) {
+    this.socket = socket;
+    this.x = 80;
+    this.y = 80;
+    this.direction = [];
+    this.Buffer = [];
+    this.src = null;
+    // this.src = "https://dynamic-assets.gather.town/sprite/avatar-M8h5xodUHFdMzyhLkcv9-IJzSdBMLblNeA34QyMJg-qskNbC9Z4FBsCfj5tQ1i-KqnHZDZ1tsvV3iIm9RwO-g483WRldPrpq2XoOAEhe-sb7g6nQb3ZYxzNHryIbM.png";
+  }
+  get id() {
+    return this.socket.id;
+  }
+  pushInput(data) {
+    this.Buffer.unshift(data);
+  }
+  update_location() {
+    const input = this.Buffer.shift();
+    // console.log(input)
+    if (this.Buffer.length > 0) {
+      this.direction.unshift(input.direction);
+      if (this.x !== input.x) {
+        this.x = input.x;
       }
-  
+      if (this.y !== input.y) {
+        this.y = input.y;
+      }
     }
   }
-  
-  function handler(req, res) {
-    fs.readFile(__dirname + "/index.html", function (err, data) {
-      if (err) {
-        res.writeHead(500);
-        return res.end("Error loading index.html");
-      }
-  
-      res.writeHead(200);
-      res.end(data);
+}
+
+function handler(req, res) {
+  fs.readFile(__dirname + "/index.html", function (err, data) {
+    if (err) {
+      res.writeHead(500);
+      return res.end("Error loading index.html");
+    }
+
+    res.writeHead(200);
+    res.end(data);
+  });
+}
+
+let characters = [];
+let charMap = {};
+
+function joinGame(socket) {
+  let user = new GameObject(socket);
+  characters.push(user);
+  charMap[socket.id] = user;
+  return user;
+}
+
+function leaveGame(socket) {
+  for (let i = 0; i < characters.length; i++) {
+    if (characters[i].id === socket.id) {
+      characters.splice(i, 1);
+      break;
+    }
+  }
+  delete charMap[socket.id];
+}
+
+function onInput(socket, data) {
+  let user = charMap[data.id];
+  // user.direction.push(data.direction);
+  // user.x = data.x || 80;
+  // user.y = data.y || 80;
+  const inputData = {
+    x: data.x,
+    y: data.y,
+    direction: data.direction,
+  };
+  user.pushInput(inputData);
+}
+
+/* for group call */
+const MAXIMUM = 5;
+let roomObjArr = [
+  // {
+  //   roomName,
+  //   currentNum,
+  //   users: [
+  //     {
+  //       socketId,
+  //       nickname,
+  //     },
+  //   ],
+  // },
+];
+
+io.on("connection", function (socket) {
+  console.log(`${socket.id} has joined!`);
+
+  socket.on("disconnect", function (reason) {
+    console.log(`${socket.id} has leaved! (${reason})`);
+
+    leaveGame(socket);
+
+    socket.broadcast.emit("leave_user", socket.id);
+  });
+
+  socket.on("input", function (data) {
+    onInput(socket, data);
+  });
+
+  let newUser = joinGame(socket);
+  socket.on("send_user_src", function (data) {
+    const nUser = charMap[data.id];
+    // console.log(nUser);
+    nUser.src = data.src;
+    for (let i = 0; i < characters.length; i++) {
+      let user = characters[i];
+      socket.emit("user_src", {
+        id: user.socket.id,
+        src: user.src,
+      });
+    }
+    socket.broadcast.emit("user_src", {
+      id: socket.id,
+      src: nUser.src,
+    });
+  });
+  for (let i = 0; i < characters.length; i++) {
+    let user = characters[i];
+    socket.emit("join_user", {
+      id: user.id,
+      x: user.x,
+      y: user.y,
     });
   }
+  socket.broadcast.emit("join_user", {
+    id: socket.id,
+    x: newUser.x,
+    y: newUser.y,
+  });
+
+  /*//////////////////
+  ms
+  ** socket.on("join_room", (roomName, nickname)내에 room관련 정보들은 소켓 룸이며, 로비의 룸이 아니므로 따로 이벤트를 생성해야함.
+
+  1. caller가 방 만들게 한다. (방 번호는 1번 부터 : global 변수 roomName)
+  2. 방장(socketID)있으면 방장에게 방을 만들면 돼. (socket.join(roomName))
+  3. 방원(socketID)을 이용해서 서버가 방원에게 offer정보를 만들라고 emit으로 시킨다.
+    3-1. 방장이 만든 방 정보(roomName: 방장이 만든..)까지 같이 넘겨야되겠지? OK
   
-  let characters = [];
-  let charMap = {};
-  
-  
-  function joinGame(socket) {
-    let user = new GameObject(socket);
-    characters.push(user);
-    charMap[socket.id] = user;
-    return user;
-  }
-  
-  function leaveGame(socket) {
-    for (let i = 0; i < characters.length; i++) {
-      if (characters[i].id === socket.id) {
-        characters.splice(i, 1);
+  peer-to-peer
+  1. 방원 -> 서버 -> 방장 (offer)
+  2. 방장 -> 서버 -> 방원 (answer)
+  3. 방원 -> 서버 -> 방장 (add ice)
+  4. 방장 -> 서버 -> 방원 (add ice) 
+
+  //////////////////*/
+
+  const MAXIMUM = 5;
+  let myRoomName = null;
+  let myNickname = null;
+
+  socket.on("join_room", (roomName, nickname) => {
+    myRoomName = roomName;
+    myNickname = nickname;
+
+    let isRoomExist = false;
+    let targetRoomObj = null;
+
+    // forEach를 사용하지 않는 이유: callback함수를 사용하기 때문에 return이 효용없음.
+    for (let i = 0; i < roomObjArr.length; ++i) {
+      if (roomObjArr[i].roomName === roomName) {
+        // Reject join the room
+        if (roomObjArr[i].currentNum >= MAXIMUM) {
+          socket.emit("reject_join");
+          return;
+        }
+
+        isRoomExist = true;
+        targetRoomObj = roomObjArr[i];
         break;
       }
     }
-    delete charMap[socket.id];
-  }
-  
-  
-  function onInput(socket, data) {
-    let user = charMap[data.id];
-    // user.direction.push(data.direction);  
-    // user.x = data.x || 80;
-    // user.y = data.y || 80;
-    const inputData = {
-      x: data.x,
-      y: data.y,
-      direction: data.direction,
-    }
-    user.pushInput(inputData);
-  }
 
-  let roomObjArr = [
-    // {
-    //   roomName,
-    //   currentNum,
-    //   users: [
-    //     {
-    //       socketId,
-    //       nickname,
-    //     },
-    //   ],
-    // },
-  ];
-
-  io.on("connection", function (socket) {
-    console.log(`${socket.id} has joined!`);
-  
-    socket.on('disconnect', function (reason) {
-      console.log(`${socket.id} has leaved! (${reason})`);
-  
-      leaveGame(socket);
-  
-      socket.broadcast.emit('leave_user', socket.id);
-    });
-  
-    socket.on('input', function (data) {
-      onInput(socket, data);
-    })
-    let roomObjArr = [
-      // {
-      //   roomName,
-      //   currentNum,
-      //   users: [
-      //     {
-      //       socketId,
-      //       nickname,
-      //     },
-      //   ],
-      // },
-    ];
-    const MAXIMUM = 5;
-    
-      let myRoomName = null;
-      let myNickname = null;
-    
-      socket.on("join_room", (roomName, nickname) => {
-        myRoomName = roomName;
-        myNickname = nickname;
-    
-        let isRoomExist = false;
-        let targetRoomObj = null;
-    
-        // forEach를 사용하지 않는 이유: callback함수를 사용하기 때문에 return이 효용없음.
-        for (let i = 0; i < roomObjArr.length; ++i) {
-          if (roomObjArr[i].roomName === roomName) {
-            // Reject join the room
-            if (roomObjArr[i].currentNum >= MAXIMUM) {
-              socket.emit("reject_join");
-              return;
-            }
-    
-            isRoomExist = true;
-            targetRoomObj = roomObjArr[i];
-            break;
-          }
-        }
-    
-        // Create room
-        if (!isRoomExist) {
-          targetRoomObj = {
-            roomName,
-            currentNum: 0,
-            users: [],
-          };
-          roomObjArr.push(targetRoomObj);
-        }
-    
-        //Join the room
-        targetRoomObj.users.push({
-          socketId: socket.id,
-          nickname,
-        });
-        ++targetRoomObj.currentNum;
-    
-        socket.join(roomName);
-        socket.emit("accept_join", targetRoomObj.users);
-        // console.log(targetRoomObj.users)
-
-      });
-    
-      socket.on("offer", (offer, remoteSocketId, localNickname) => {
-        socket.to(remoteSocketId).emit("offer", offer, socket.id, localNickname);
-      });
-    
-      socket.on("answer", (answer, remoteSocketId) => {
-        socket.to(remoteSocketId).emit("answer", answer, socket.id);
-      });
-    
-      socket.on("ice", (ice, remoteSocketId) => {
-        socket.to(remoteSocketId).emit("ice", ice, socket.id);
-      });
-    
-      socket.on("chat", (message, roomName) => {
-        socket.to(roomName).emit("chat", message);
-      });
-
-      socket.on("user_call", ({caller, callee}) => {
-        const DuplCheck = video_call_stack?.filter((item) => item.caller === caller && item.callee === callee)
-        
-        if (DuplCheck.length === 0) {
-          video_call_stack.push({
-            caller,
-            callee
-          });
-          console.log(video_call_stack);
-        }
-        //video_call_stack : [ {Caller1, Callee}, {Caller1, Callee},,,, ]
-        //input : { '4TD7oabReWtFetOOAAAO', 'MxzUNhfFivHmFQoQAAAG' }
-        const result = video_call_stack.shift();
-        console.log(result.caller, result.callee);
-
-        //caller 방만든다. 
-
-        /* 현재 소켓의 룸넘버가 0이면 가까운 아무나 소켓의 룸넘버에 접근해서 그 룸에 해당 소켓을 넣게 한다 (룸넘버->클로저챗) (소켓에 필드추가)
-         * 
-         */
-
-
-
-      // });
-      // video_call_stack
-      // socket.on("disconnecting", () => {
-      //   socket.to(myRoomName).emit("leave_room", socket.id, myNickname);
-    
-      //   let isRoomEmpty = false;
-      //   for (let i = 0; i < roomObjArr.length; ++i) {
-      //     if (roomObjArr[i].roomName === myRoomName) {
-      //       const newUsers = roomObjArr[i].users.filter(
-      //         (user) => user.socketId != socket.id
-      //       );
-      //       roomObjArr[i].users = newUsers;
-      //       --roomObjArr[i].currentNum;
-    
-      //       if (roomObjArr[i].currentNum == 0) {
-      //         isRoomEmpty = true;
-      //       }
-      //     }
-      //   }
-    
-      //   // Delete room
-      //   if (isRoomEmpty) {
-      //     const newRoomObjArr = roomObjArr.filter(
-      //       (roomObj) => roomObj.currentNum != 0
-      //     );
-      //     roomObjArr = newRoomObjArr;
-      //   }
-      // });
-/////////////////////////////////////////////////////////////
-  
-    let newUser = joinGame(socket);
-    socket.on('send_user_src', function(data){
-      const nUser = charMap[data.id];
-      // console.log(nUser);
-      nUser.src = data.src;
-      for (let i = 0; i < characters.length; i++) {
-        let user = characters[i];
-        socket.emit('user_src', {
-          id: user.socket.id,
-          src: user.src
-        });
-      }
-      socket.broadcast.emit("user_src", {
-        id: socket.id,
-        src: nUser.src
-      })
-    })
-    for (let i = 0; i < characters.length; i++) {
-      let user = characters[i];
-      socket.emit('join_user', {
-        id: user.id,
-        x: user.x,
-        y: user.y,
-      });
-    }
-    socket.broadcast.emit('join_user', {
-      id: socket.id,
-      x: newUser.x,
-      y: newUser.y,
-    });
-  
-  });
-  function updateGame() {
-
-    for (let i = 0; i < characters.length; i++) {
-      let character = characters[i];
-  
-      character.update_location();
-  
-      // ball.handleInput(timeRate);
-    }
-  
-    setTimeout(updateGame, 32);
-  }
-  
-  
-  function broadcastState() {
-  
-    let data = {};
-    for (let i = 0; i < characters.length; i++) {
-      let character = characters[i];
-      // console.log(character.direction);
-      data[i] = {
-        id: character.id,
-        x: character.x,
-        y: character.y,
-        direction: character.direction.shift(),
+    // Create room
+    if (!isRoomExist) {
+      targetRoomObj = {
+        roomName,
+        currentNum: 0,
+        users: [],
       };
+      roomObjArr.push(targetRoomObj);
     }
-  
-    io.sockets.emit('update_state', data);
-  
-    setTimeout(broadcastState, 32);
+
+    //Join the room
+    targetRoomObj.users.push({
+      socketId: socket.id,
+      nickname,
+    });
+    ++targetRoomObj.currentNum;
+
+    socket.join(roomName);
+    socket.emit("accept_join", targetRoomObj.users);
+    // console.log(targetRoomObj.users)
+  });
+
+  socket.on("user_call", ({ caller, callee }) => {
+    const DuplCheck = video_call_stack?.filter(
+      (item) => item.caller === caller && item.callee === callee
+    );
+
+    if (DuplCheck.length === 0) {
+      video_call_stack.push({
+        caller,
+        callee,
+      });
+      console.log(video_call_stack);
+    }
+    //video_call_stack : [ {Caller1, Callee}, {Caller1, Callee},,,, ]
+    //input : { '4TD7oabReWtFetOOAAAO', 'MxzUNhfFivHmFQoQAAAG' }
+    const result = video_call_stack.shift();
+    console.log(result.caller, result.callee);
+
+    //caller 방만든다.
+
+    /* 현재 소켓의 룸넘버가 0이면 가까운 아무나 소켓의 룸넘버에 접근해서 그 룸에 해당 소켓을 넣게 한다 (룸넘버->클로저챗) (소켓에 필드추가)
+     *
+     */
+  });
+
+  socket.on("offer", (offer, remoteSocketId, localNickname) => {
+    socket.to(remoteSocketId).emit("offer", offer, socket.id, localNickname);
+  });
+
+  socket.on("answer", (answer, remoteSocketId) => {
+    socket.to(remoteSocketId).emit("answer", answer, socket.id);
+  });
+
+  socket.on("ice", (ice, remoteSocketId) => {
+    socket.to(remoteSocketId).emit("ice", ice, socket.id);
+  });
+
+  socket.on("chat", (message, roomName) => {
+    socket.to(roomName).emit("chat", message);
+  });
+
+  socket.on("disconnecting", () => {
+    socket.to(myRoomName).emit("leave_room", socket.id, myNickname);
+
+    let isRoomEmpty = false;
+    for (let i = 0; i < roomObjArr.length; ++i) {
+      if (roomObjArr[i].roomName === myRoomName) {
+        const newUsers = roomObjArr[i].users.filter(
+          (user) => user.socketId != socket.id
+        );
+        roomObjArr[i].users = newUsers;
+        --roomObjArr[i].currentNum;
+
+        if (roomObjArr[i].currentNum == 0) {
+          isRoomEmpty = true;
+        }
+      }
+    }
+
+    // Delete room
+    if (isRoomEmpty) {
+      const newRoomObjArr = roomObjArr.filter(
+        (roomObj) => roomObj.currentNum != 0
+      );
+      roomObjArr = newRoomObjArr;
+    }
+  });
+});
+
+function updateGame() {
+  for (let i = 0; i < characters.length; i++) {
+    let character = characters[i];
+
+    character.update_location();
+
+    // ball.handleInput(timeRate);
   }
-  
-  updateGame();
-  broadcastState();
-/////////////////////////////////////////////////////////////////////////////
 
+  setTimeout(updateGame, 32);
+}
 
+function broadcastState() {
+  let data = {};
+  for (let i = 0; i < characters.length; i++) {
+    let character = characters[i];
+    // console.log(character.direction);
+    data[i] = {
+      id: character.id,
+      x: character.x,
+      y: character.y,
+      direction: character.direction.shift(),
+    };
+  }
 
-///////////////////
+  io.sockets.emit("update_state", data);
 
+  setTimeout(broadcastState, 32);
+}
 
-
-
-
+updateGame();
+broadcastState();
 
 module.exports = app;
