@@ -38,7 +38,7 @@ const io = require("socket.io")(httpServer, {
   },
 });
 
-console.log(io);
+// console.log(io);
 
 // express앱과 MySQL을 연결
 sequelize
