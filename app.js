@@ -31,10 +31,11 @@ const io = require("socket.io")(httpServer, {
   cors: {
     origin: "*",
     methods: ["GET", "POST"],
+    credentials: true,
   },
 });
 
-// console.log(io);
+console.log(io);
 
 // express앱과 MySQL을 연결
 sequelize
