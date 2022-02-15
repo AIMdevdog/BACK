@@ -44,7 +44,38 @@ let corsOption = {
   credentials: true, // true로 하면 설정한 내용을 response 헤더에 추가 해줍니다.
 };
 
-const groupName = 0;
+/* 전역 변수 */
+let characters = []; //character socketID list
+let charMap = {}; //character information (x,y 등등)
+
+/* for group call */
+const groupCallName = 0; //CallName for temp
+const MAXIMUM = 5; //Call maximun
+//roomObjArr는 오해의 소지가 있어 groupObjArr로 변경 예정
+let roomObjArr = [
+  // {
+  //   roomName,
+  //   currentNum,
+  //   users: [
+  //     {
+  //       socketId,
+  //       nickname,
+  //     },
+  //   ],
+  // },
+];
+let groupObjArr = [
+  // {
+  //   roomName,
+  //   currentNum,
+  //   users: [
+  //     {
+  //       socketId,
+  //       nickname,
+  //     },
+  //   ],
+  // },
+];
 
 app.use(cors(corsOption));
 app.use(express.static("public"));
@@ -129,15 +160,12 @@ function handler(req, res) {
   });
 }
 
-let characters = [];
-let charMap = {};
-
 function joinGame(socket) {
   let user = new GameObject(socket);
   characters.push(user);
   charMap[socket.id] = user;
   return user;
-}
+} /*  */
 
 function leaveGame(socket) {
   for (let i = 0; i < characters.length; i++) {
@@ -162,20 +190,38 @@ function onInput(socket, data) {
   user.pushInput(inputData);
 }
 
-/* for group call */
-const MAXIMUM = 5;
-let roomObjArr = [
-  // {
-  //   roomName,
-  //   currentNum,
-  //   users: [
-  //     {
-  //       socketId,
-  //       nickname,
-  //     },
-  //   ],
-  // },
-];
+function updateGame() {
+  for (let i = 0; i < characters.length; i++) {
+    let character = characters[i];
+
+    character.update_location();
+
+    // ball.handleInput(timeRate);
+  }
+
+  setTimeout(updateGame, 32);
+}
+
+function broadcastState() {
+  let data = {};
+  for (let i = 0; i < characters.length; i++) {
+    let character = characters[i];
+    // console.log(character.direction);
+    data[i] = {
+      id: character.id,
+      x: character.x,
+      y: character.y,
+      direction: character.direction.shift(),
+    };
+  }
+
+  io.sockets.emit("update_state", data);
+
+  setTimeout(broadcastState, 32);
+}
+
+updateGame();
+broadcastState();
 
 io.on("connection", function (socket) {
   console.log(`${socket.id} has joined!`);
@@ -223,30 +269,15 @@ io.on("connection", function (socket) {
     y: newUser.y,
   });
 
-  /*//////////////////
-  ms
-  ** socket.on("join_room", (roomName, nickname)내에 room관련 정보들은 소켓 룸이며, 로비의 룸이 아니므로 따로 이벤트를 생성해야함.
 
-  1. caller가 방 만들게 한다. (방 번호는 1번 부터 : global 변수 roomName)
-  2. 방장(socketID)있으면 방장에게 방을 만들면 돼. (socket.join(roomName))
-  3. 방원(socketID)을 이용해서 서버가 방원에게 offer정보를 만들라고 emit으로 시킨다.
-    3-1. 방장이 만든 방 정보(roomName: 방장이 만든..)까지 같이 넘겨야되겠지? OK
-  
-  peer-to-peer
-  1. 방원 -> 서버 -> 방장 (offer)
-  2. 방장 -> 서버 -> 방원 (answer)
-  3. 방원 -> 서버 -> 방장 (add ice)
-  4. 방장 -> 서버 -> 방원 (add ice) 
-
-  //////////////////*/
-
-  const MAXIMUM = 5;
-  let myRoomName = null;
-  let myNickname = null;
+  // 의미없어보임 (삭제 예정)
+  // let myRoomName = null;
+  // let myNickname = null;
 
   socket.on("join_room", (roomName, nickname) => {
-    myRoomName = roomName;
-    myNickname = nickname;
+    // 의미없어보임 (삭제 예정)
+    // myRoomName = roomName;
+    // myNickname = nickname;
 
     let isRoomExist = false;
     let targetRoomObj = null;
@@ -285,7 +316,53 @@ io.on("connection", function (socket) {
 
     socket.join(roomName);
     socket.emit("accept_join", targetRoomObj.users);
-    // console.log(targetRoomObj.users)
+  });
+
+  /*//////////////////
+  ms
+  ** socket.on("join_room", (roomName, nickname)내에 room관련 정보들은 소켓 룸이며, 로비의 룸이 아니므로 따로 이벤트를 생성해야함.
+
+  1. caller가 방 만들게 한다. (방 번호는 1번 부터 : global 변수 roomName)
+  2. 방장(socketID)있으면 방장에게 방을 만들면 돼. (socket.join(roomName))
+  3. 방원(socketID)을 이용해서 서버가 방원에게 offer정보를 만들라고 emit으로 시킨다.
+    3-1. 방장이 만든 방 정보(roomName: 방장이 만든..)까지 같이 넘겨야되겠지? OK
+  
+  peer-to-peer
+  1. 방원 -> 서버 -> 방장 (offer)
+  2. 방장 -> 서버 -> 방원 (answer)
+  3. 방원 -> 서버 -> 방장 (add ice)
+  4. 방장 -> 서버 -> 방원 (add ice) 
+
+  
+  
+  const groupCallName = 0; //CallName for temp
+  const MAXIMUM = 5; //Call maximun
+  let roomObjArr = [
+    // {
+    //   roomName,
+    //   currentNum,
+    //   users: [
+    //     {
+    //       socketId,
+    //       nickname,
+    //     },
+    //   ],
+    // },
+  ];
+
+  makeGroup함수를 만들어서 
+  caller, callee 들어올때마다 
+  caller가 방을 만들고, callee가 그룹에 참여하면 된다. 
+  //////////////////*/
+
+  
+
+  
+
+  socket.on("makegroup", (groupName, caller, callee) => {
+    var nickname = "Anon";
+    var groupName = 0;
+    makeGroup(groupName, caller, nickname);
   });
 
   socket.on("user_call", ({ caller, callee }) => {
@@ -298,12 +375,12 @@ io.on("connection", function (socket) {
         caller,
         callee,
       });
-      console.log(video_call_stack);
     }
-    //video_call_stack : [ {Caller1, Callee}, {Caller1, Callee},,,, ]
-    //input : { '4TD7oabReWtFetOOAAAO', 'MxzUNhfFivHmFQoQAAAG' }
+    // video_call_stack : [ {Caller1, Callee}, {Caller1, Callee},,,, ]
+    // input : { '4TD7oabReWtFetOOAAAO', 'MxzUNhfFivHmFQoQAAAG' }
     const result = video_call_stack.shift();
-    console.log(result.caller, result.callee);
+    
+
 
     //caller 방만든다.
 
@@ -328,65 +405,71 @@ io.on("connection", function (socket) {
     socket.to(roomName).emit("chat", message);
   });
 
-  socket.on("disconnecting", () => {
-    socket.to(myRoomName).emit("leave_room", socket.id, myNickname);
+  // socket.on("disconnecting", () => {
+  //   socket.to(myRoomName).emit("leave_room", socket.id, myNickname);
 
-    let isRoomEmpty = false;
-    for (let i = 0; i < roomObjArr.length; ++i) {
-      if (roomObjArr[i].roomName === myRoomName) {
-        const newUsers = roomObjArr[i].users.filter(
-          (user) => user.socketId != socket.id
-        );
-        roomObjArr[i].users = newUsers;
-        --roomObjArr[i].currentNum;
+  //   let isRoomEmpty = false;
+  //   for (let i = 0; i < roomObjArr.length; ++i) {
+  //     if (roomObjArr[i].roomName === myRoomName) {
+  //       const newUsers = roomObjArr[i].users.filter(
+  //         (user) => user.socketId != socket.id
+  //       );
+  //       roomObjArr[i].users = newUsers;
+  //       --roomObjArr[i].currentNum;
 
-        if (roomObjArr[i].currentNum == 0) {
-          isRoomEmpty = true;
-        }
-      }
-    }
+  //       if (roomObjArr[i].currentNum == 0) {
+  //         isRoomEmpty = true;
+  //       }
+  //     }
+  //   }
 
-    // Delete room
-    if (isRoomEmpty) {
-      const newRoomObjArr = roomObjArr.filter(
-        (roomObj) => roomObj.currentNum != 0
-      );
-      roomObjArr = newRoomObjArr;
-    }
-  });
+  //   // Delete room
+  //   if (isRoomEmpty) {
+  //     const newRoomObjArr = roomObjArr.filter(
+  //       (roomObj) => roomObj.currentNum != 0
+  //     );
+  //     roomObjArr = newRoomObjArr;
+  //   }
+  // });
 });
 
-function updateGame() {
-  for (let i = 0; i < characters.length; i++) {
-    let character = characters[i];
+//when caller make the room
+function makeGroup(groupName, socket, nickname) {
+  initGroupObj = {
+    groupName,
+    currentNum: 0,
+    users: {
+      socketId: socket.id,
+      nickname
+    },
+  };
+  groupObjArr.push(initGroupObj);
+  // return targetGroupObj;
+  socket.join(groupName);
+  socket.emit("accept_join", targetGroupObj.users);
+}
+//when callee join the room
+function joinGroup(groupName, socket) {
+  for (let i = 0; i < groupObjArr.length; ++i) {
+    if (groupObjArr[i].groupName === groupName) {
+      // Reject join the room
+      if (groupObjArr[i].currentNum >= MAXIMUM) {
+        socket.emit("reject_join");
+        return;
+      }
+      //Join the room
+      targetGroupObj.users.push({
+        socketId: socket.id,
+        nickname,
+      });
+      ++targetGroupObj.currentNum;
 
-    character.update_location();
-
-    // ball.handleInput(timeRate);
+      socket.join(groupName);
+      socket.emit("accept_join", targetGroupObj.users);
+    }
   }
-
-  setTimeout(updateGame, 32);
 }
 
-function broadcastState() {
-  let data = {};
-  for (let i = 0; i < characters.length; i++) {
-    let character = characters[i];
-    // console.log(character.direction);
-    data[i] = {
-      id: character.id,
-      x: character.x,
-      y: character.y,
-      direction: character.direction.shift(),
-    };
-  }
 
-  io.sockets.emit("update_state", data);
-
-  setTimeout(broadcastState, 32);
-}
-
-updateGame();
-broadcastState();
 
 module.exports = app;
