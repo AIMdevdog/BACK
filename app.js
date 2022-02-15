@@ -25,7 +25,7 @@ const PORT = process.env.PORT || 8000;
 
 const io = require("socket.io")(httpServer, {
   cors: {
-    origin: "*",
+    origin: "https://dev-team-aim.com/",
     credentials: true,
   },
 });
