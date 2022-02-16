@@ -340,7 +340,9 @@ io.on("connection", function (socket) {
   });
 
   socket.on("chat", (message, roomName) => {
-    socket.to(roomName).emit("chat", message);
+    if (socket.rooms.has(roomName)) {
+      socket.to(roomName).emit("chat", message);
+    }
   });
 
   socket.on("leave_Group", (removeSid) => {

@@ -6,7 +6,9 @@ const { Aim_map_images } = require("../models");
 
 router.get("/", async (req, res) => {
   try {
-    const findAllRoom = await Aim_map_images.findAll();
+    const findAllRoom = await Aim_map_images.findAll({
+      // order: ["createdAt", "ASC"]
+    });
     res.json(findAllRoom);
   } catch (e) {
     console.log(e);
