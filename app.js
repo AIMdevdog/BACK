@@ -123,7 +123,7 @@ class GameObject {
     this.x = 80;
     this.y = 80;
     this.direction = [];
-    this.Buffer = [];
+    this.buffer = [];
     this.src = null;
     this.groupNumber = 0;
     // this.src = "https://dynamic-assets.gather.town/sprite/avatar-M8h5xodUHFdMzyhLkcv9-IJzSdBMLblNeA34QyMJg-qskNbC9Z4FBsCfj5tQ1i-KqnHZDZ1tsvV3iIm9RwO-g483WRldPrpq2XoOAEhe-sb7g6nQb3ZYxzNHryIbM.png";
@@ -132,12 +132,16 @@ class GameObject {
     return this.socket.id;
   }
   pushInput(data) {
-    this.Buffer.push(data);
+    this.buffer.push(data);
+    let stay_num = this.buffer.filter(element => (element.direction === undefined && element.x === data.x && element.y === data.y)).length;
+    if (stay_num > 5) {
+      this.buffer = [];
+    }
   }
   update_location() {
-    const input = this.Buffer.shift();
+    const input = this.buffer.shift();
     // console.log(input)
-    if (this.Buffer.length > 0) {
+    if (this.buffer.length > 0) {
       this.direction.unshift(input.direction);
       if (this.x !== input.x) {
         this.x = input.x;
@@ -180,9 +184,6 @@ function leaveGame(socket) {
 
 function onInput(socket, data) {
   let user = charMap[data.id];
-  // user.direction.push(data.direction);
-  // user.x = data.x || 80;
-  // user.y = data.y || 80;
   const inputData = {
     x: data.x,
     y: data.y,
@@ -196,8 +197,6 @@ function updateGame() {
     let character = characters[i];
 
     character.update_location();
-
-    // ball.handleInput(timeRate);
   }
 
   setTimeout(updateGame, 16);
@@ -207,7 +206,6 @@ function broadcastState() {
   let data = {};
   for (let i = 0; i < characters.length; i++) {
     let character = characters[i];
-    // console.log(character.direction);
     data[i] = {
       id: character.id,
       x: character.x,
@@ -311,10 +309,9 @@ io.on("connection", function (socket) {
     const user_callee = charMap[callee]
 
     //callee의 방이 있으면 그냥 참가 함수(caller)
-    if(user_callee.groupNumber)
-    {
+    if (user_callee.groupNumber) {
       joinGroup(user_callee.groupNumber, user_caller.socket, "ANON");
-    }else{
+    } else {
       const tempGroupNumber = makeGroup(user_caller.socket, "ANON");
       joinGroup(tempGroupNumber, user_callee.socket, "ANON");
     }
@@ -322,7 +319,7 @@ io.on("connection", function (socket) {
 
     // user_caller.groupNumber = true;
     // user_callee.groupNumber = true;
-    
+
     // function makeGroup(groupName, socket, nickname)
 
     //caller 방만든다.
@@ -388,11 +385,11 @@ io.on("connection", function (socket) {
         if (sId === groupObjArr[i].users[j].socketId) {
           console.log('***', groupObjArr[i].users)
           socket.leave(groupObjArr[i].groupName) // socket Room 에서 삭제
-          groupObjArr[i].users.splice(j,1) // 우리가 따로 저장했던 배열에서도 삭제
+          groupObjArr[i].users.splice(j, 1) // 우리가 따로 저장했던 배열에서도 삭제
           console.log('*지웠나 체크*', groupObjArr[i].users)
         }
+      }
     }
-  }
     console.log("____________leave_group____________")
     // clearAllVideos();
     // const streams = document.querySelector("#streams");
@@ -403,7 +400,7 @@ io.on("connection", function (socket) {
   });
 });
 
-  
+
 
 //when caller make the room
 function makeGroup(socket, nickname) {
@@ -412,10 +409,10 @@ function makeGroup(socket, nickname) {
   initGroupObj = {
     groupName,
     currentNum: 0,
-    users: [ {
+    users: [{
       socketId: socket.id,
       nickname
-    } ],
+    }],
   };
   groupObjArr.push(initGroupObj);
   socket.join(groupName);
@@ -429,7 +426,7 @@ function joinGroup(groupName, socket, nickname) {
   for (let i = 0; i < groupObjArr.length; ++i) {
     if (groupObjArr[i].groupName === groupName) {
       // Reject join the room
-      
+
       if (groupObjArr[i].currentNum >= MAXIMUM) {
         socket.emit("reject_join");
         return;
@@ -440,7 +437,7 @@ function joinGroup(groupName, socket, nickname) {
         nickname,
       });
       ++groupObjArr[i].currentNum;
-      
+
       socket.join(groupName);
       socket.emit("accept_join", groupObjArr[i].users);
     }
@@ -455,7 +452,7 @@ function joinGroup(groupName, socket, nickname) {
 
 //   myFace.srcObject = null;
 //   myStream.getTracks().forEach((track) => track.stop());
-  
+
 //   streamArr.forEach((streamElement) => {
 //     if (streamElement.id != "myStream") {
 //       streams.removeChild(streamElement);
@@ -475,10 +472,10 @@ function joinGroup(groupName, socket, nickname) {
 
 //   groupObjArr.pop(groupName);
 
-  
-  // return targetGroupObj;
-  // socket.join(groupName);
-  // socket.emit("accept_join", [1]);
+
+// return targetGroupObj;
+// socket.join(groupName);
+// socket.emit("accept_join", [1]);
 // };
 
 
