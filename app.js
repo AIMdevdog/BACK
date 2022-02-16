@@ -404,7 +404,7 @@ io.on("connection", function (socket) {
 //when caller make the room
 function makeGroup(socket, nickname) {
   console.log("makeGroup");
-  groupName = 0;
+  groupName = 1;
   initGroupObj = {
     groupName,
     currentNum: 0,
