@@ -373,7 +373,7 @@ io.on("connection", function (socket) {
   //   }
   // });
 
-  socket.on("leave_Group", (sId) => {
+  socket.on("leave_Group", (sId, removePeerFace) => {
     console.log("________ㅠㅠ 멀어졌다..____________", sId) // player.id로 groupObjArr에서 roomName찾기
     for (let i = 0; i < groupObjArr.length; ++i) {
       // console.log(groupObjArr[i].groupName)
@@ -390,6 +390,7 @@ io.on("connection", function (socket) {
         }
       }
     }
+    removePeerFace(sId);
     console.log("____________leave_group____________")
     // clearAllVideos();
     // const streams = document.querySelector("#streams");
