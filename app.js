@@ -394,7 +394,11 @@ io.on("connection", function (socket) {
     }
   }
     console.log("____________leave_group____________")
-    
+    // clearAllVideos();
+    // const streams = document.querySelector("#streams");
+    // const streamArr = streams.querySelectorAll("div");
+    // const myFace = document.querySelector("#myFace");
+    // console.log("____________Clear Video____________")
     // unGroup(groupName, socket, nickname);
   });
 });
@@ -443,33 +447,39 @@ function joinGroup(groupName, socket, nickname) {
   }
 }
 
-function clearAllVideos() {
-  const streamArr = streams.querySelectorAll("div");
-  console.log("### clearAllVideos", streams.querySelectorAll("div"))
-  console.log("### clearAllVideos", streamArr)
+// function clearAllVideos() {
+//   const streams = document.querySelector("#streams");
+//   const streamArr = streams.querySelectorAll("div");
+//   console.log("### clearAllVideos", streams.querySelectorAll("div"))
+//   console.log("### clearAllVideos", streamArr)
+
+//   myFace.srcObject = null;
+//   myStream.getTracks().forEach((track) => track.stop());
   
-  streamArr.forEach((streamElement) => {
-    if (streamElement.id != "myStream") {
-      streams.removeChild(streamElement);
-    }
-  });
-}
+//   streamArr.forEach((streamElement) => {
+//     if (streamElement.id != "myStream") {
+//       streams.removeChild(streamElement);
+//     }
+//   });
+// }
 
-function unGroup(groupName, socket, nickname) {
-  console.log("unGroup");
-  // console.log(groupObjArr)
+// function unGroup(groupName, socket, nickname) {
+//   console.log("unGroup");
+//   // console.log(groupObjArr)
 
-  myStream.getTracks().forEach((track) => track.stop());
+//   myStream.getTracks().forEach((track) => track.stop());
 
-  myFace.srcObject = null;
-  clearAllVideos();
-  clearAllChat();
+//   myFace.srcObject = null;
+//   clearAllVideos();
+//   clearAllChat();
 
-  groupObjArr.pop(groupName);
+//   groupObjArr.pop(groupName);
+
+  
   // return targetGroupObj;
   // socket.join(groupName);
   // socket.emit("accept_join", [1]);
-};
+// };
 
 
 
