@@ -231,8 +231,9 @@ io.on("connection", function (socket) {
 
   socket.on("disconnect", function (reason) {
     console.log(`${socket.id} has leaved! (${reason})`);
-
+    removeUser(socket.id);
     leaveGame(socket);
+
 
     socket.broadcast.emit("leave_user", socket.id);
   });
@@ -345,8 +346,7 @@ io.on("connection", function (socket) {
     }
   });
 
-  socket.on("leave_Group", (removeSid) => {
-    console.log("________ㅠㅠ 멀어졌다..____________ sid = ", removeSid)
+  function removeUser(removeSid){
     let deleted = []; // player.id로 groupObjArr에서 roomName찾기
     let findGroupName;
     for (let i = 0; i < groupObjArr.length; i++) {
@@ -375,7 +375,13 @@ io.on("connection", function (socket) {
     socket.to(findGroupName).emit("leave_succ", {
       removeSid,
     })
-    charMap[removeSid].groupNumber = 0; // 그룹 넘버 초기화
+    charMap[removeSid].groupNumber = 0;
+  }
+
+  socket.on("leave_Group", (removeSid) => {
+    console.log("________ㅠㅠ 멀어졌다..____________ sid = ", removeSid)
+ // 그룹 넘버 초기화
+    removeUser(removeSid);
   });
 });
 
