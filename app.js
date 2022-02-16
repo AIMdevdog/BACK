@@ -22,10 +22,10 @@ const app = express();
 const httpServer = http.createServer(app);
 const PORT = 8000;
 const io = require("socket.io")(httpServer, {
-  cors: {
-    origin: "*",
-    credentials: true,
-  },
+  // cors: {
+  //   origin: "*",
+  //   credentials: true,
+  // },
 });
 
 // express앱과 MySQL을 연결
@@ -76,7 +76,6 @@ let groupObjArr = [
   // },
 ];
 
-
 app.use(cors(corsOption));
 app.use(express.static("public"));
 
@@ -111,7 +110,7 @@ app.use(function (err, req, res, next) {
   res.render("error");
 });
 
-httpServer.listen(PORT, () => {
+httpServer.listen(process.env.PORT || 8000, () => {
   console.log(`Server running on ${PORT}`);
 });
 
@@ -133,7 +132,12 @@ class GameObject {
   }
   pushInput(data) {
     this.buffer.push(data);
-    let stay_num = this.buffer.filter(element => (element.direction === undefined && element.x === data.x && element.y === data.y)).length;
+    let stay_num = this.buffer.filter(
+      (element) =>
+        element.direction === undefined &&
+        element.x === data.x &&
+        element.y === data.y
+    ).length;
     if (stay_num > 5) {
       this.buffer = [];
     }
@@ -274,31 +278,32 @@ io.on("connection", function (socket) {
   4. 방장 -> 서버 -> 방원 (add ice) 
 */
 
-
   socket.on("user_call", async ({ caller, callee }) => {
-    const user_caller = charMap[caller]
-    const user_callee = charMap[callee]
-    
+    const user_caller = charMap[caller];
+    const user_callee = charMap[callee];
+
     //callee의 방이 있으면 그냥 참가 함수(caller)
     // caller 1 & callee 1 => 문제
-    // caller 0 & callee 1 
+    // caller 0 & callee 1
     // caller 1 & callee 0 => 문제
     // caller 0 & callee 0
-    let guest_gN = user_callee.groupNumber
-    let host_gN = user_caller.groupNumber
-    
+    let guest_gN = user_callee.groupNumber;
+    let host_gN = user_caller.groupNumber;
+
     console.log(guest_gN, host_gN);
 
     if (guest_gN) {
-      if (!host_gN){
+      if (!host_gN) {
         await joinGroup(guest_gN, user_caller.socket, "ANON");
-        console.log("1번", guest_gN, host_gN)
+        console.log("1번", guest_gN, host_gN);
         user_caller.groupNumber = guest_gN;
       }
-    } else if (!host_gN) { //guest x && host x
+    } else if (!host_gN) {
+      //guest x && host x
       user_caller.groupNumber = await makeGroup(user_caller.socket, "ANON");
-      console.log("2번", guest_gN, host_gN)
-    } else { // guest X && host O
+      console.log("2번", guest_gN, host_gN);
+    } else {
+      // guest X && host O
       console.log("else일 때 hosst_gN: ", host_gN, "guest_gN: ", guest_gN);
     }
 
@@ -307,7 +312,7 @@ io.on("connection", function (socket) {
     //     await socket.emit("leave_group", user_caller.socket.id, removePeerFace);
     //     // joinGroup(host_gN, user_callee.socket, "ANON"); // callee(guest))가 들어감
     //     host_gN = guest_gN;
-    //   } 
+    //   }
     // } else {
     //   if(guest_gN === host_gN) {
     //     const tempGroupNumber = makeGroup(user_caller.socket, "ANON");
@@ -359,8 +364,6 @@ io.on("connection", function (socket) {
   });
 });
 
-
-
 //when caller make the room
 function makeGroup(socket, nickname) {
   console.log("makeGroup");
@@ -368,10 +371,12 @@ function makeGroup(socket, nickname) {
   initGroupObj = {
     groupName,
     currentNum: 0,
-    users: [{
-      socketId: socket.id,
-      nickname
-    }],
+    users: [
+      {
+        socketId: socket.id,
+        nickname,
+      },
+    ],
   };
   groupObjArr.push(initGroupObj);
   socket.join(groupName);
@@ -401,6 +406,5 @@ function joinGroup(groupName, socket, nickname) {
     }
   }
 }
-
 
 module.exports = app;
