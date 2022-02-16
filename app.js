@@ -267,66 +267,59 @@ io.on("connection", function (socket) {
     y: newUser.y,
   });
 
-  /*//////////////////
-  ** socket.on("join_room", (roomName, nickname)내에 room관련 정보들은 소켓 룸이며, 로비의 룸이 아니므로 따로 이벤트를 생성해야함.
-
-  1. caller가 방 만들게 한다. (방 번호는 1번 부터 : global 변수 roomName)
-  2. 방장(socketID)있으면 방장에게 방을 만들면 돼. (socket.join(roomName))
-  3. 방원(socketID)을 이용해서 서버가 방원에게 offer정보를 만들라고 emit으로 시킨다.
-    3-1. 방장이 만든 방 정보(roomName: 방장이 만든..)까지 같이 넘겨야되겠지? OK
-  
-  peer-to-peer
+  /*
   1. 방원 -> 서버 -> 방장 (offer)
   2. 방장 -> 서버 -> 방원 (answer)
   3. 방원 -> 서버 -> 방장 (add ice)
   4. 방장 -> 서버 -> 방원 (add ice) 
+*/
 
 
-  const groupCallName = 0; //CallName for temp
-  const MAXIMUM = 5; //Call maximun
-  let roomObjArr = [
-    // {
-    //   roomName,
-    //   currentNum,
-    //   users: [
-    //     {
-    //       socketId,
-    //       nickname,
-    //     },
-    //   ],
-    // },
-  ];
-
-
-  makeGroup함수를 만들어서 
-  caller, callee 들어올때마다 
-  caller가 방을 만들고, callee가 그룹에 참여하면 된다. 
-  //////////////////*/
-
-
-  socket.on("user_call", ({ caller, callee }) => {
+  socket.on("user_call", async ({ caller, callee }) => {
     const user_caller = charMap[caller]
     const user_callee = charMap[callee]
-
+    
     //callee의 방이 있으면 그냥 참가 함수(caller)
-    if (user_callee.groupNumber) {
-      joinGroup(user_callee.groupNumber, user_caller.socket, "ANON");
-    } else {
-      const tempGroupNumber = makeGroup(user_caller.socket, "ANON");
-      joinGroup(tempGroupNumber, user_callee.socket, "ANON");
+    // caller 1 & callee 1 => 문제
+    // caller 0 & callee 1 
+    // caller 1 & callee 0 => 문제
+    // caller 0 & callee 0
+    let guest_gN = user_callee.groupNumber
+    let host_gN = user_caller.groupNumber
+    
+    console.log(guest_gN, host_gN);
+
+    if (guest_gN) {
+      if (!host_gN){
+        await joinGroup(guest_gN, user_caller.socket, "ANON");
+        console.log("1번", guest_gN, host_gN)
+        user_caller.groupNumber = guest_gN;
+      }
+    } else if (!host_gN) { //guest x && host x
+      user_caller.groupNumber = await makeGroup(user_caller.socket, "ANON");
+      console.log("2번", guest_gN, host_gN)
+    } else { // guest X && host O
+      console.log("else일 때 hosst_gN: ", host_gN, "guest_gN: ", guest_gN);
     }
-    //성공하면 이거 설정 필요
 
-    // user_caller.groupNumber = true;
-    // user_callee.groupNumber = true;
-
-    // function makeGroup(groupName, socket, nickname)
-
-    //caller 방만든다.
-
-    /* 현재 소켓의 룸넘버가 0이면 가까운 아무나 소켓의 룸넘버에 접근해서 그 룸에 해당 소켓을 넣게 한다 (룸넘버->클로저챗) (소켓에 필드추가)
-     *
-     */
+    // if (guest_gN && host_gN) { // 둘 다 그룹이 있는데
+    //   if(guest_gN !== host_gN) { // 그룹 번호가 다르면 -> guest가 leave_group후 join
+    //     await socket.emit("leave_group", user_caller.socket.id, removePeerFace);
+    //     // joinGroup(host_gN, user_callee.socket, "ANON"); // callee(guest))가 들어감
+    //     host_gN = guest_gN;
+    //   } 
+    // } else {
+    //   if(guest_gN === host_gN) {
+    //     const tempGroupNumber = makeGroup(user_caller.socket, "ANON");
+    //     host_gN = tempGroupNumber;
+    //     joinGroup(tempGroupNumber, user_callee.socket, "ANON");
+    //     guest_gN = tempGroupNumber;
+    //     console.log(host_gN, guest_gN);
+    //   }else{ // caller만 join
+    //     joinGroup(host_gN, user_callee.socket, "ANON");
+    //     guest_gN = host_gN;
+    //   }
+    // }
   });
 
   socket.on("offer", (offer, remoteSocketId, localNickname) => {
@@ -345,34 +338,6 @@ io.on("connection", function (socket) {
     socket.to(roomName).emit("chat", message);
   });
 
-  // socket.on("disconnected", () => {
-  //   // console.log(groupObjArr)
-  //   // socket.to(groupObjArr.groupName).emit("leave_Group", socket.id);
-
-  //   let isRoomEmpty = false;
-  //   for (let i = 0; i < roomObjArr.length; ++i) {
-  //     if (roomObjArr[i].roomName === groupObjArr.groupName) {
-  //       const newUsers = roomObjArr[i].users.filter(
-  //         (user) => user.socketId != socket.id
-  //       );
-  //       roomObjArr[i].users = newUsers;
-  //       --roomObjArr[i].currentNum;
-
-  //       if (roomObjArr[i].currentNum == 0) {
-  //         isRoomEmpty = true;
-  //       }
-  //     }
-  //   }
-
-  //   // Delete room
-  //   if (isRoomEmpty) {
-  //     const newRoomObjArr = roomObjArr.filter(
-  //       (roomObj) => roomObj.currentNum != 0
-  //     );
-  //     roomObjArr = newRoomObjArr;
-  //   }
-  // });
-
   socket.on("leave_Group", (sId, removePeerFace) => {
     console.log("________ㅠㅠ 멀어졌다..____________", sId) // player.id로 groupObjArr에서 roomName찾기
     for (let i = 0; i < groupObjArr.length; ++i) {
@@ -390,14 +355,9 @@ io.on("connection", function (socket) {
         }
       }
     }
-    removePeerFace(sId);
     console.log("____________leave_group____________")
-    // clearAllVideos();
-    // const streams = document.querySelector("#streams");
-    // const streamArr = streams.querySelectorAll("div");
-    // const myFace = document.querySelector("#myFace");
-    // console.log("____________Clear Video____________")
-    // unGroup(groupName, socket, nickname);
+    removePeerFace(sId);
+    charMap[sId].groupNumber = 0;
   });
 });
 
@@ -423,7 +383,6 @@ function makeGroup(socket, nickname) {
 //when callee join the room
 function joinGroup(groupName, socket, nickname) {
   console.log("joinGroup");
-  console.log("실행 joinGroup");
   for (let i = 0; i < groupObjArr.length; ++i) {
     if (groupObjArr[i].groupName === groupName) {
       // Reject join the room
@@ -444,41 +403,6 @@ function joinGroup(groupName, socket, nickname) {
     }
   }
 }
-
-// function clearAllVideos() {
-//   const streams = document.querySelector("#streams");
-//   const streamArr = streams.querySelectorAll("div");
-//   console.log("### clearAllVideos", streams.querySelectorAll("div"))
-//   console.log("### clearAllVideos", streamArr)
-
-//   myFace.srcObject = null;
-//   myStream.getTracks().forEach((track) => track.stop());
-
-//   streamArr.forEach((streamElement) => {
-//     if (streamElement.id != "myStream") {
-//       streams.removeChild(streamElement);
-//     }
-//   });
-// }
-
-// function unGroup(groupName, socket, nickname) {
-//   console.log("unGroup");
-//   // console.log(groupObjArr)
-
-//   myStream.getTracks().forEach((track) => track.stop());
-
-//   myFace.srcObject = null;
-//   clearAllVideos();
-//   clearAllChat();
-
-//   groupObjArr.pop(groupName);
-
-
-// return targetGroupObj;
-// socket.join(groupName);
-// socket.emit("accept_join", [1]);
-// };
-
 
 
 module.exports = app;
