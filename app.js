@@ -338,26 +338,24 @@ io.on("connection", function (socket) {
     socket.to(roomName).emit("chat", message);
   });
 
-  socket.on("leave_Group", (sId, removePeerFace) => {
-    console.log("________ㅠㅠ 멀어졌다..____________", sId) // player.id로 groupObjArr에서 roomName찾기
-    for (let i = 0; i < groupObjArr.length; ++i) {
-      // console.log(groupObjArr[i].groupName)
-
-      for (let j = 0; j < groupObjArr[i].users.length; ++j) {
-        console.log(groupObjArr[i].users[j].socketId)
-
-        // 거리가 멀어질 player의 sid로 화상통화 그룹 정보에 저장된 동일한 sid를 찾아서 그룹에서 삭제해준다
-        if (sId === groupObjArr[i].users[j].socketId) {
-          console.log('***', groupObjArr[i].users)
-          socket.leave(groupObjArr[i].groupName) // socket Room 에서 삭제
-          groupObjArr[i].users.splice(j, 1) // 우리가 따로 저장했던 배열에서도 삭제
+  socket.on("leave_Group", (otherSid, removePeerFace) => {
+    console.log("________ㅠㅠ 멀어졌다..____________ sid = ", otherSid) // player.id로 groupObjArr에서 roomName찾기
+    for (let i = 0; i < groupObjArr.length; i++) {
+      // console.log("********groupArr", groupObjArr[i])
+      for (let j = 0; j < groupObjArr[i].users.length; j++) {
+        // 거리가 멀어질 player의 otherSid로 화상통화 그룹 정보에 저장된 동일한 otherSid를 찾아서 그룹에서 삭제해준다
+        if (otherSid === groupObjArr[i].users[j].socketId) {
+          console.log('######', groupObjArr[i].users)
+          socket.leave(groupObjArr[i].groupName)   // socket Room 에서 삭제
+          console.log("socket에서 잘 삭제됐는지?", socket.rooms)
+          groupObjArr[i].users.splice(j, 1)        // 우리가 따로 저장했던 배열에서도 삭제
           console.log('*지웠나 체크*', groupObjArr[i].users)
         }
       }
     }
     console.log("____________leave_group____________")
-    removePeerFace(sId);
-    charMap[sId].groupNumber = 0;
+    removePeerFace(otherSid);          // 영상 안뜨게 날림
+    charMap[otherSid].groupNumber = 0; // 그룹 넘버 초기화
   });
 });
 
