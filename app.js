@@ -326,7 +326,7 @@ io.on("connection", function (socket) {
     //   }
     // }
   });
-
+ 
   socket.on("offer", (offer, remoteSocketId, localNickname) => {
     socket.to(remoteSocketId).emit("offer", offer, socket.id, localNickname);
   });
@@ -343,24 +343,37 @@ io.on("connection", function (socket) {
     socket.to(roomName).emit("chat", message);
   });
 
-  socket.on("leave_Group", (otherSid, removePeerFace) => {
-    console.log("________ㅠㅠ 멀어졌다..____________ sid = ", otherSid) // player.id로 groupObjArr에서 roomName찾기
+  socket.on("leave_Group", (removeSid) => {
+    console.log("________ㅠㅠ 멀어졌다..____________ sid = ", removeSid)
+    let deleted = []; // player.id로 groupObjArr에서 roomName찾기
+    let findGroupName;
     for (let i = 0; i < groupObjArr.length; i++) {
-      // console.log("********groupArr", groupObjArr[i])
       for (let j = 0; j < groupObjArr[i].users.length; j++) {
-        // 거리가 멀어질 player의 otherSid로 화상통화 그룹 정보에 저장된 동일한 otherSid를 찾아서 그룹에서 삭제해준다
-        if (otherSid === groupObjArr[i].users[j].socketId) {
-          console.log('######', groupObjArr[i].users)
-          socket.leave(groupObjArr[i].groupName)   // socket Room 에서 삭제
+        // 거리가 멀어질 player의 Sid로 화상통화 그룹 정보에 저장된 동일한 Sid를 찾아서 그룹에서 삭제해준다
+        if (removeSid === groupObjArr[i].users[j].socketId) {
+          findGroupName = groupObjArr[i].groupName;
+          // console.log('######', groupObjArr[i].users)
+          console.log("leave", groupObjArr[i].groupName);
+          console.log(typeof(groupObjArr[i].groupName));
+          socket.leave(groupObjArr[i].groupName);   //  socket Room 에서 삭제
           console.log("socket에서 잘 삭제됐는지?", socket.rooms)
           groupObjArr[i].users.splice(j, 1)        // 우리가 따로 저장했던 배열에서도 삭제
           console.log('*지웠나 체크*', groupObjArr[i].users)
+          if (groupObjArr[i].users.length === 0) { // for 빈 소켓 룸([]) 삭제 1
+            deleted.push(i);
+          }
+          break
         }
       }
     }
+    for (let i = 0; i < deleted.length; i++) { // for 빈 소켓 룸([]) 삭제 2
+      groupObjArr.splice(deleted[i], 1);
+    }
     console.log("____________leave_group____________")
-    removePeerFace(otherSid);          // 영상 안뜨게 날림
-    charMap[otherSid].groupNumber = 0; // 그룹 넘버 초기화
+    socket.to(findGroupName).emit("leave_succ", {
+      removeSid,
+    })
+    charMap[removeSid].groupNumber = 0; // 그룹 넘버 초기화
   });
 });
 
@@ -380,6 +393,7 @@ function makeGroup(socket, nickname) {
   };
   groupObjArr.push(initGroupObj);
   socket.join(groupName);
+  console.log("join:", groupName)
   socket.emit("accept_join", [1]);
   return groupName;
 }
@@ -387,10 +401,12 @@ function makeGroup(socket, nickname) {
 function joinGroup(groupName, socket, nickname) {
   console.log("joinGroup");
   for (let i = 0; i < groupObjArr.length; ++i) {
+    
+    console.log(`${i} 방 안에 있는 모든 유저의 소켓ID : `, groupObjArr[i].users);
     if (groupObjArr[i].groupName === groupName) {
       // Reject join the room
 
-      if (groupObjArr[i].currentNum >= MAXIMUM) {
+      if (groupObjArr[i].users.length >= MAXIMUM) {
         socket.emit("reject_join");
         return;
       }
@@ -399,8 +415,8 @@ function joinGroup(groupName, socket, nickname) {
         socketId: socket.id,
         nickname,
       });
-      ++groupObjArr[i].currentNum;
-
+      // ++groupObjArr[i].currentNum; 색제 예정
+      
       socket.join(groupName);
       socket.emit("accept_join", groupObjArr[i].users);
     }
