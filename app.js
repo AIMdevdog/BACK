@@ -305,39 +305,18 @@ io.on("connection", function (socket) {
   caller가 방을 만들고, callee가 그룹에 참여하면 된다. 
   //////////////////*/
 
-  
-  socket.on("makegroup", (groupName, caller, callee) => {
-    var nickname = "Anon";
-    var groupName = '0';
-    makeGroup(groupName, caller, nickname);
-  });
 
   socket.on("user_call", ({ caller, callee }) => {
-    const DuplCheck = video_call_stack?.filter(
-      (item) => item.caller === caller && item.callee === callee
-    );
-    // console.log("***DuplCheck***", DuplCheck) // 초깃값 []로 들어감
-
-    if (DuplCheck.length === 0) {
-      video_call_stack.push({
-        caller,
-        callee,
-      });
-    }
-
     const user_caller = charMap[caller]
     const user_callee = charMap[callee]
-    // video_call_stack : [ {Caller1, Callee}, {Caller1, Callee},,,, ]
-    // input : { '4TD7oabReWtFetOOAAAO', 'MxzUNhfFivHmFQoQAAAG' }
-    // const result = video_call_stack.shift();
-    
+
     //callee의 방이 있으면 그냥 참가 함수(caller)
     if(user_callee.groupNumber)
     {
       joinGroup(user_callee.groupNumber, user_caller.socket, "ANON");
     }else{
-      makeGroup(user_caller.groupNumber, user_caller.socket, "ANON");
-      joinGroup(user_caller.groupNumber, user_callee.socket, "ANON")  
+      const tempGroupNumber = makeGroup(user_caller.socket, "ANON");
+      joinGroup(tempGroupNumber, user_callee.socket, "ANON");
     }
     //성공하면 이거 설정 필요
 
@@ -423,8 +402,9 @@ io.on("connection", function (socket) {
   
 
 //when caller make the room
-function makeGroup(groupName, socket, nickname) {
+function makeGroup(socket, nickname) {
   console.log("makeGroup");
+  groupName = 0;
   initGroupObj = {
     groupName,
     currentNum: 0,
@@ -436,6 +416,7 @@ function makeGroup(groupName, socket, nickname) {
   groupObjArr.push(initGroupObj);
   socket.join(groupName);
   socket.emit("accept_join", [1]);
+  return groupName;
 }
 //when callee join the room
 function joinGroup(groupName, socket, nickname) {
