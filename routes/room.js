@@ -2,7 +2,8 @@ const express = require("express");
 const router = express.Router();
 
 //DB 정보
-const { Aim_map_images } = require("../models");
+const { Aim_map_images, Aim_user_room, Aim_user_info } = require("../models");
+const authUser = require("./middlewares/authUser");
 
 router.get("/", async (req, res) => {
   try {
@@ -15,12 +16,14 @@ router.get("/", async (req, res) => {
   }
 });
 
-router.post("/create", async (req, res) => {
+router.post("/create", authUser, async (req, res) => {
   try {
-    const { hostId, image, title, desc } = req.body;
-    const result = Aim_map_images.create({
-      hostId,
-      image,
+    const { image, title, desc } = req.body;
+    
+    const { id } = req.user;
+    const result = Aim_user_room.create({
+      hostId: id,
+      mapId: image,
       title,
       desc,
     });

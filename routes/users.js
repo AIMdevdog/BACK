@@ -7,46 +7,106 @@ const GoogleStrategy = require("passport-google-oauth2").Strategy;
 const bodyParser = require("body-parser");
 const mysql = require("mysql");
 const { Aim_user_info } = require("../models");
-// import { Aim_user_info } from "../models";
+const jwt = require("jsonwebtoken");
+const authUser = require("./middlewares/authUser");
+const bcrypt = require('bcrypt');
 
-var router = express.Router();
+const router = express.Router();
+const privateKey = 'session';
+const refreshKey = 'refresh';
 
 /* GET users listing. */
-router.get("/", function (req, res, next) {
-  console.log("here");
-  res.send("respond with a resource");
-});
+// router.get("/", function (req, res, next) {
+//   console.log("here");
+//   res.send("respond with a resource");
+// });
 
-/* POST login */
-router.post("/login", async (req, res) => {
-  /* 로그인 버튼을 클릭시, req = {email, password}
-   * email과 password가 둘 다 동일하면 res.sendStatus(200);
-   * email 동일한게 없다면 data = {400, "회원정보가 없습니다. "}
-   */
-  console.log("asd");
+// router.post("/test", ())
+
+router.post("/login", async(req, res) => {
   const { email, password } = req.body;
-  if (!email || !password) {
-    res
-      .sendStatus(400)
-      .json("이메일과 패스워드 미입력")
+  try {
+    if (!email || !password) {
+      return res.status(500).json({ result: '아이디나 비밀번호를 입력해주세요.' });
+    }
+    const findUser = await Aim_user_info.findOne({
+      where: {
+        email
+      }
+    });
+    if (!findUser) {
+      res.status(401).json({ result: '회원정보가 없습니다.' });
+    } else {
+      if (findUser.password === password) {
+      // 암호화 저장시 사용
+      // if (await bcrypt.compare(findUser.password, password)) {
+        const accessToken = jwt.sign({
+          email,
+          info: 'AccessToken',
+        }, privateKey, { expiresIn: '60s' });
+        const refreshToken = jwt.sign({
+          email,
+          info: 'RefreshToken',
+        }, refreshKey, { expiresIn: '3d'});
+  
+        const result = await findUser.update({
+          accessToken, 
+          refreshToken,
+        });
+        res.status(200).json({ msg: '로그인에 성공했습니다.', result: {access_token: accessToken, refresh_token: refreshToken} });
+      } else {
+        res.status(401).json({ msg: '비밀번호가 틀렸습니다.' });
+      }
+    }
+  } catch (e) {
+    console.log(e);
   }
-  const findUser = await Aim_user_info.findOne({
-    where: {email},
-  });
-  if (findUser) {
-    console.log("회원을 찾았습니다.")
-    res.sendStatus(200);
-  } else {
-    console.log("회원을 못 찾았습니다.")
-    res
-      .sendStatus(401)
-      .json("회원을 못 찾았습니다.")
-
-  }
-
-
-  res.sendStatus(200);
 });
+
+router.get('/refreshToken', (req, res) => {
+  const token = req.headers['refresh-token'];
+  console.log('refresh', token);
+  jwt.verify(token, refreshKey, (err, decoded) => {
+    if (err) return res.status(500).json({ result: err });
+
+    const token = jwt.sign({
+        email: req.body.email,
+      }, privateKey, { expiresIn: '60s' });
+      return res.json({ msg: '리프레쉬 성공', result: { access_token: token } });
+  });
+});
+
+router.post('/signup', async function(req, res) {
+  const { email, password, nickname } = req.body;
+  try {
+    if (!email || !password || !nickname) {
+      return res.status(500).json({ msg: '값을 입력하십시오.' });
+    }
+    const isExistUser = await Aim_user_info.findOne({
+      where: {
+        email,
+      }
+    })
+    console.log(isExistUser)
+    if (isExistUser) {
+      return res.status(500).json({ msg: '중복된 이메일입니다.' })
+    } else {
+      const result = await Aim_user_info.create({
+        email,
+        password,
+        nickname,
+      })
+      if (result) {
+        return res.json({ msg: '회원가입이 완료되었습니다.' })
+      } else {
+        return res.status(500).json({ msg: '회원가입에 실패했습니다.' })
+      }
+    }
+  } catch(e) {
+    console.log(e)
+  }
+});
+
 
 router.post("/auth/google", async function (req, res, next) {
   //accessToken X, email X DB에 저장해야한다.
@@ -79,30 +139,23 @@ router.post("/auth/google", async function (req, res, next) {
 });
 
 /* GET users listing. */
-router.post("/update/profile", async function (req, res) {
+router.post("/update/profile", authUser,  async function (req, res) {
   const { accessToken, nickname, character } = req.body;
   // console.log("success");
   try {
     //여기의 버튼은 회원가입이 안되어있으면 못들어오는 페이지 => email check 안해도 될 듯함
-    const findUser = await Aim_user_info.findOne({
-      where: { accessToken },
-    });
-    if (findUser) {
-      //token checked
-      //update user_info in DB
-
-      await findUser.update({
+    const userInfo = req.user;
+    if (userInfo) {
+      await userInfo.update({
         nickname,
         character,
       });
       res.json({
-        code: 200,
-        msg: "캐릭터가 생성되었습니다(정보가 업데이트 되었습니다)",
+        msg: "캐릭터가 생성되었습니다.(정보가 업데이트 되었습니다.)",
       });
     } else {
-      res.json({
-        code: 400,
-        msg: "토큰이 만료됐습니다.",
+      res.status(400).json({
+        msg: "토큰이 만료되었습니다.",
       });
     }
   } catch (e) {
@@ -111,23 +164,14 @@ router.post("/update/profile", async function (req, res) {
 });
 
 /* GET users listing. */
-router.post("/get/userinfo", async function (req, res) {
+router.post("/get/userinfo", authUser, async function (req, res) {
   const { accessToken } = req.body;
   try {
     //여기의 버튼은 회원가입이 안되어있으면 못들어오는 페이지 => email check 안해도 될 듯함
-    const findUser = await Aim_user_info.findOne({
-      where: { accessToken },
-    });
-    if (findUser) {
-      res.json({
-        code: 200,
-        data: findUser,
-      });
+    if (req.user) {
+      res.json({ result : req.user });
     } else {
-      res.json({
-        code: 400,
-        msg: "토큰이 만료됐습니다.",
-      });
+      res.status(400).json( { msg: "토큰이 만료됐습니다." });
     }
   } catch (e) {
     console.log(e);
@@ -186,7 +230,8 @@ router.post("/get/userinfo", async function (req, res) {
 // logout
 router.get("/logout", (req, res) => {
   req.logout();
-  res.redirect("/login");
+  // res.redirect("/login");
+  res.json({ msg: '로그아웃 되었습니다.' })
 });
 
 module.exports = router;
