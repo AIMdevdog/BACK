@@ -7,15 +7,101 @@ const GoogleStrategy = require("passport-google-oauth2").Strategy;
 const bodyParser = require("body-parser");
 const mysql = require("mysql");
 const { Aim_user_info } = require("../models");
+const jwt = require("jsonwebtoken");
 // import { Aim_user_info } from "../models";
 
-var router = express.Router();
+const router = express.Router();
+const privateKey = 'session';
+const refreshKey = 'refresh';
 
 /* GET users listing. */
-router.get("/", function (req, res, next) {
-  console.log("here");
-  res.send("respond with a resource");
+// router.get("/", function (req, res, next) {
+//   console.log("here");
+//   res.send("respond with a resource");
+// });
+
+// router.post("/test", ())
+
+router.post("/login", async(req, res) => {
+  const { email, password } = req.body;
+  if (!email || !password) {
+    return res.status(500).json({ result: '아이디나 비밀번호를 입력해주세요.' });
+  }
+  const findUser = await Aim_user_info.findOne({
+    where: {
+      email
+    }
+  });
+  if (!findUser) {
+    res.status(401).json({ result: '회원정보가 없습니다.' });
+  } else {
+    if (findUser.password === password) {
+      const accessToken = jwt.sign({
+        email,
+        info: 'AccessToken',
+      }, privateKey, { expiresIn: '60s' });
+      const refreshToken = jwt.sign({
+        email,
+        info: 'RefreshToken',
+      }, refreshKey, { expiresIn: '3d'});
+
+      await findUser.update({
+        accessToken, 
+        refreshToken,
+      });
+
+      res.status(200).json({ msg: '로그인 성공', result: {access_token: accessToken, refresh_token: refreshToken} });
+    } else {
+      res.status(401).json({ result: '비밀번호가 틀립니다.' });
+    }
+  }
 });
+
+router.get('/refreshToken', (req, res) => {
+  const token = req.headers['refresh-token'];
+  console.log('refresh', token);
+  jwt.verify(token, refreshKey, (err, decoded) => {
+    if (err) return res.status(500).json({ result: err });
+    const token = jwt.sign({
+      email: req.body.email,
+    }, privateKey, { expiresIn: '60s' });
+    return res.json({ msg: '리프레쉬 성공', result: { access_token: token } });
+  });
+});
+
+router.post('/signup', async function(req, res) {
+  const { email, password, nickname } = req.body;
+  try {
+    if (!email || !password || !nickname) {
+      return res.status(500).json({ msg: '값을 입력하십시오.' });
+    }
+    const isExistUser = await Aim_user_info.findOne({
+      where: {
+        email,
+      }
+    })
+    console.log(isExistUser)
+    if (isExistUser) {
+      return res.status(500).json({
+        msg: '중복된 이메일입니다.',
+      })
+    } else {
+      const result = await Aim_user_info.create({
+        email,
+        password,
+        nickname,
+      })
+      if (result) {
+        return res.json({ msg: '회원가입이 완료되었습니다.' })
+      } else {
+        return res.status(500).json({ msg: '회원가입에 실패했습니다.' })
+      }
+    }
+  } catch(e) {
+    console.log(e)
+  }
+});
+
 
 router.post("/auth/google", async function (req, res, next) {
   //accessToken X, email X DB에 저장해야한다.

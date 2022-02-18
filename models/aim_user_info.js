@@ -13,8 +13,13 @@ module.exports = class Aim_user_info extends Sequelize.Model {
         //     autoIncrement: true,
         // },
         accessToken: {
-          type: Sequelize.STRING(512),
-          allowNull: false,
+          type: Sequelize.STRING(1024),
+          allowNull: true,
+          unique: true,
+        },
+        refreshToken: {
+          type: Sequelize.STRING(1024),
+          allowNull: true,
           unique: true,
         },
         email: {
