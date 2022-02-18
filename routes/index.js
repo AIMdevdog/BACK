@@ -26,6 +26,22 @@ router.get("/", (req, res) => {
   }
 });
 
+//로그인 시 실행
+module.exports = () => {
+  passport.serializeUser((user, done) => {
+    done(null, user.id);
+  });
+
+  passport.deserializeUser((id, done) => {
+    User.findOne({ where: {id} })
+      .then(user => done(null, user))
+      .catch(err => done(err));
+  });
+
+  local();
+}
+
+
 /* lobby 화면 */
 router.get("/lobby", async (req, res) => {
   /*

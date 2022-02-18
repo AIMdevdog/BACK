@@ -16,8 +16,10 @@ const usersRouter = require("./routes/users");
 const roomRouter = require("./routes/room");
 const characterRouter = require("./routes/characters");
 const userRoomRouter = require("./routes/userRoom");
+// const passportConfig = require('./routes/users');
 
 const app = express();
+// passportConfig();
 
 const httpServer = http.createServer(app);
 const PORT = 8000;
@@ -51,18 +53,6 @@ let charMap = {}; //character information (x,y 등등)
 /* for group call */
 const groupCallName = 0; //CallName for temp
 const MAXIMUM = 5; //Call maximum
-let roomObjArr = [
-  // {
-  //   roomName,
-  //   currentNum,
-  //   users: [
-  //     {
-  //       socketId,
-  //       nickname,
-  //     },
-  //   ],
-  // },
-];
 let groupObjArr = [
   // {
   //   roomName,
@@ -78,6 +68,20 @@ let groupObjArr = [
 
 app.use(cors(corsOption));
 app.use(express.static("public"));
+
+// signin and signup
+app.use(passport.initialize());
+app.use(passport.session());
+//왜 필요한거지 
+app.use(session({
+  resave:false,
+  saveUninitialized:false,
+  secret: process.env.COOKIE_SECRET,
+  cookie:{
+    httpOnly: true,
+    secure: false
+  },
+}));
 
 // view engine setup
 app.set("views", path.join(__dirname, "views"));
@@ -114,7 +118,9 @@ httpServer.listen(process.env.PORT || 8000, () => {
   console.log(`Server running on ${PORT}`);
 });
 
-const video_call_stack = [];
+app.get('/', (req, res) => {
+  console.log("오나요");
+})
 
 class GameObject {
   constructor(socket) {

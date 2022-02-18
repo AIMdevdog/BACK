@@ -8,14 +8,80 @@ const bodyParser = require("body-parser");
 const mysql = require("mysql");
 const { Aim_user_info } = require("../models");
 // import { Aim_user_info } from "../models";
+const local = require('./localStrategy');
+const router = express.Router();
 
-var router = express.Router();
+
+const bcrypt = require('bcrypt');
+const { isLoggedIn, isNotLoggedIn } = require('./middlewares');
+
+
 
 /* GET users listing. */
 router.get("/", function (req, res, next) {
   console.log("here");
   res.send("respond with a resource");
 });
+
+/* POST login */
+// router.get("/login", (req, res) => {
+//   /* 로그인 버튼을 클릭시, req = {email, password}
+//    * email과 password가 둘 다 동일하면 res.sendStatus(200);
+//    * email 동일한게 없다면 data = {400, "회원정보가 없습니다. "}
+//    */
+//   res.sendStatus(200);
+// });
+
+router.post('/test', (req, res, next) => {
+  // res.send("오나요?");
+  console.log("오나요>");
+})
+
+router.post('/login', isNotLoggedIn, (req, res, next) => {
+  res.send("가나요?")
+  passport.authenticate('local', (authError, user, info) => {
+      if (authError) {
+          console.error(authError);
+          return next(authError); //뭐지 
+      }
+      if (!user) {
+          return res.redirect(`/?loginError = ${info.message}`);
+      }
+      return req.login(user, (loginError) => {
+          if (loginError) {
+              console.error(loginError);
+              return next(loginError);
+          }
+          return res.sendStatus(200);
+      });
+  })(req, res, next); //문법이 뭐지?
+});
+
+// router.post('/join'. isNotLoggedIn, async (req, res, next) => {
+//   const { email, nick, password } = req.body;
+//   try {
+//       const exUser = await Aim_user_info.findOne( { where: {email} });
+//       if (exUser) {
+//           return res.send('./join?error=exist');
+//       }
+//       const hash = await bcrypt.hash(password, 12);
+//       await Aim_user_info.create({
+//           email,
+//           nick,
+//           password:hash,
+//       });
+//       return res.redirect('/');
+//   } catch (error) {
+//       console.error(error) ;
+//       return next(authError);
+//   }
+// });
+
+// router.get('/logout'. isLoggedIn, (req, res) => {
+//   req.logout();
+//   req.session.destroy();
+//   req.redirect('/');
+// });
 
 router.post("/auth/google", async function (req, res, next) {
   //accessToken X, email X DB에 저장해야한다.
@@ -103,14 +169,6 @@ router.post("/get/userinfo", async function (req, res) {
   }
 });
 
-// /* POST login */
-// router.get("/login", (req, res) => {
-//   /* 로그인 버튼을 클릭시, req = {email, password}
-//    * email과 password가 둘 다 동일하면 res.sendStatus(200);
-//    * email 동일한게 없다면 data = {400, "회원정보가 없습니다. "}
-//    */
-//   res.sendStatus(200);
-// });
 
 // //Nickname page에서 만들기 버튼을 만들었을 때,
 // router.post("/sendNickname", async(req, res) => {
