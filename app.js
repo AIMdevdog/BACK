@@ -45,13 +45,12 @@ let corsOption = {
 };
 
 /* 전역 변수 */
-let characters = []; //character socketID list
 let charMap = {}; //character information (x,y 등등)
 
 /* for group call */
 const groupCallName = 0; //CallName for temp
 const MAXIMUM = 5; //Call maximum
-let roomObjArr = [
+let roomObjArr = {
   // {
   //   roomName,
   //   currentNum,
@@ -62,7 +61,7 @@ let roomObjArr = [
   //     },
   //   ],
   // },
-];
+};
 let groupObjArr = [
   // {
   //   roomName,
@@ -115,7 +114,7 @@ httpServer.listen(process.env.PORT || 8000, () => {
 });
 
 const video_call_stack = [];
-
+let roomNum = 0;
 class GameObject {
   constructor(socket) {
     this.socket = socket;
@@ -125,6 +124,7 @@ class GameObject {
     this.buffer = [];
     this.src = null;
     this.groupNumber = 0;
+    this.roomId = "";
     // this.src = "https://dynamic-assets.gather.town/sprite/avatar-M8h5xodUHFdMzyhLkcv9-IJzSdBMLblNeA34QyMJg-qskNbC9Z4FBsCfj5tQ1i-KqnHZDZ1tsvV3iIm9RwO-g483WRldPrpq2XoOAEhe-sb7g6nQb3ZYxzNHryIbM.png";
   }
   get id() {
@@ -169,21 +169,37 @@ function handler(req, res) {
   });
 }
 
-function joinGame(socket) {
+function makeGame(socket, roomId){
+  console.log("makeGame func called");
   let user = new GameObject(socket);
-  characters.push(user);
-  charMap[socket.id] = user;
+  initGameObj = []
+  initGameObj.push(user);
+  roomObjArr[roomId] = initGameObj;
   return user;
-} /*  */
+}
+
+function joinGame(socket, roomId) {
+  console.log("joinGame func called");
+  let user = new GameObject(socket);
+  roomObjArr[roomId].push(user);
+  return user;
+}
+
 
 function leaveGame(socket) {
-  for (let i = 0; i < characters.length; i++) {
-    if (characters[i].id === socket.id) {
-      characters.splice(i, 1);
-      break;
-    }
-  }
   delete charMap[socket.id];
+  Object.values(roomObjArr).forEach((gameGroup)=>{
+    for (let i = 0; i < gameGroup.length; i++) {
+      if (gameGroup[i].id === socket.id) {
+        const roomId = gameGroup[i].roomId;
+        gameGroup.splice(i, 1);
+        if(gameGroup.length === 0){
+          delete roomObjArr[roomId];
+        }
+        return;
+      }
+    }
+  });
 }
 
 function onInput(socket, data) {
@@ -197,28 +213,29 @@ function onInput(socket, data) {
 }
 
 function updateGame() {
-  for (let i = 0; i < characters.length; i++) {
-    let character = characters[i];
-
-    character.update_location();
-  }
-
+  Object.values(charMap).forEach((object)=>{
+    object.update_location();
+  })
   setTimeout(updateGame, 16);
 }
 
 function broadcastState() {
-  let data = {};
-  for (let i = 0; i < characters.length; i++) {
-    let character = characters[i];
-    data[i] = {
-      id: character.id,
-      x: character.x,
-      y: character.y,
-      direction: character.direction.shift(),
-    };
-  }
+  Object.values(roomObjArr).forEach((gameGroup) => {
+    let data = {};
+    for (let i = 0; i < gameGroup.length; i++) {
+      let character = gameGroup[i];
+      data[i] = {
+        id: character.id,
+        x: character.x,
+        y: character.y,
+        direction: character.direction.shift(),
+      };
+    }
+    io.sockets.in(gameGroup[0].roomId).emit("update_state", data);
+  })
 
-  io.sockets.emit("update_state", data);
+
+
 
   setTimeout(broadcastState, 16);
 }
@@ -226,51 +243,63 @@ function broadcastState() {
 updateGame();
 broadcastState();
 
+
+
 io.on("connection", function (socket) {
   console.log(`${socket.id} has joined!`);
-
   socket.on("disconnect", function (reason) {
     console.log(`${socket.id} has leaved! (${reason})`);
     removeUser(socket.id);
     leaveGame(socket);
-
-
-    socket.broadcast.emit("leave_user", socket.id);
+    socket.broadcast.emit("leave_user", {
+      id: socket.id
+    });
   });
 
   socket.on("input", function (data) {
     onInput(socket, data);
   });
+  socket.emit("join_user");
 
-  let newUser = joinGame(socket);
-  socket.on("send_user_src", function (data) {
-    const nUser = charMap[data.id];
-    nUser.src = data.src;
-    for (let i = 0; i < characters.length; i++) {
-      let user = characters[i];
-      socket.emit("user_src", {
+  socket.on("send_user_info", function(data){
+    const {src, x, y, roomId} = data;
+    socket.join(roomId);
+    let newUser;
+    if(roomObjArr[roomId]){
+      newUser = joinGame(socket, roomId);
+      newUser.x = x;
+      newUser.y = y;
+      newUser.src = src;
+      newUser.roomId = roomId;
+    }else{
+      newUser = makeGame(socket, roomId);
+      newUser.x = x;
+      newUser.y = y;
+      newUser.src = src;
+      newUser.roomId = roomId;
+    }
+
+    charMap[socket.id] = newUser;
+    const gameGroup = roomObjArr[roomId];
+    for (let i = 0; i < gameGroup.length; i++) {
+      let user = gameGroup[i];
+      socket.emit("get_user_info", {
         id: user.socket.id,
+        x: user.x,
+        y: user.y,
         src: user.src,
       });
     }
-    socket.broadcast.emit("user_src", {
+    socket.to(roomId).emit("get_user_info", {
       id: socket.id,
-      src: nUser.src,
+      x: newUser.x,
+      y: newUser.y,
+      src: newUser.src,
     });
-  });
-  for (let i = 0; i < characters.length; i++) {
-    let user = characters[i];
-    socket.emit("join_user", {
-      id: user.id,
-      x: user.x,
-      y: user.y,
-    });
-  }
-  socket.broadcast.emit("join_user", {
-    id: socket.id,
-    x: newUser.x,
-    y: newUser.y,
-  });
+  })
+
+
+
 
   /*
   1. 방원 -> 서버 -> 방장 (offer)
