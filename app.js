@@ -124,6 +124,7 @@ class GameObject {
     this.buffer = [];
     this.src = null;
     this.groupNumber = 0;
+    this.nickname = "";
     this.roomId = "";
     // this.src = "https://dynamic-assets.gather.town/sprite/avatar-M8h5xodUHFdMzyhLkcv9-IJzSdBMLblNeA34QyMJg-qskNbC9Z4FBsCfj5tQ1i-KqnHZDZ1tsvV3iIm9RwO-g483WRldPrpq2XoOAEhe-sb7g6nQb3ZYxzNHryIbM.png";
   }
@@ -262,7 +263,7 @@ io.on("connection", function (socket) {
   socket.emit("join_user");
 
   socket.on("send_user_info", function(data){
-    const {src, x, y, roomId} = data;
+    const {src, x, y, nickname,roomId} = data;
     socket.join(roomId);
     let newUser;
     if(roomObjArr[roomId]){
@@ -270,12 +271,14 @@ io.on("connection", function (socket) {
       newUser.x = x;
       newUser.y = y;
       newUser.src = src;
+      newUser.nickname = nickname;
       newUser.roomId = roomId;
     }else{
       newUser = makeGame(socket, roomId);
       newUser.x = x;
       newUser.y = y;
       newUser.src = src;
+      newUser.nickname = nickname;
       newUser.roomId = roomId;
     }
 
@@ -288,6 +291,7 @@ io.on("connection", function (socket) {
         x: user.x,
         y: user.y,
         src: user.src,
+        nickname: user.nickname,
       });
     }
     socket.to(roomId).emit("get_user_info", {
@@ -295,6 +299,7 @@ io.on("connection", function (socket) {
       x: newUser.x,
       y: newUser.y,
       src: newUser.src,
+      nickname: newUser.nickname,
     });
   })
 
