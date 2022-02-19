@@ -114,9 +114,10 @@ router.post("/signup", async function (req, res) {
         email,
       },
     });
-    console.log(isExistUser);
     if (isExistUser) {
       return res.status(500).json({ msg: "중복된 이메일입니다." });
+    } else if (isExistUser.nickname === nickname) {
+      return res.status(500).json({ msg: "이미 존재하는 닉네임입니다."});
     } else {
       const result = await Aim_user_info.create({
         email,
