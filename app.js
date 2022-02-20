@@ -49,6 +49,7 @@ let charMap = {}; //character information (x,y 등등)
 
 /* for group call */
 const groupCallName = 0; //CallName for temp
+let groupName = 0;
 const MAXIMUM = 5; //Call maximum
 let roomObjArr = {
   // {
@@ -317,11 +318,6 @@ io.on("connection", function (socket) {
     const user_caller = charMap[caller];
     const user_callee = charMap[callee];
 
-    //callee의 방이 있으면 그냥 참가 함수(caller)
-    // caller 1 & callee 1 => 문제
-    // caller 0 & callee 1
-    // caller 1 & callee 0 => 문제
-    // caller 0 & callee 0
     let guest_gN = user_callee.groupNumber;
     let host_gN = user_caller.groupNumber;
 
@@ -330,36 +326,32 @@ io.on("connection", function (socket) {
     if (guest_gN) {
       if (!host_gN) {
         await joinGroup(guest_gN, user_caller.socket, "ANON");
-        console.log("1번", guest_gN, host_gN);
         user_caller.groupNumber = guest_gN;
+        console.log(user_caller.groupNumber, user_callee.groupNumber);
+      } else { //guest_gN과 host_gN이 다를 경우를 추가
+        if (guest_gN != host_gN) {
+          console.log("host, guest의 그룹 번호가 다릅니다.");
+          if (guest_gN > host_gN) {
+            await removeUser(caller);
+            joinGroup(guest_gN, user_caller.socket, "ANON");
+            user_caller.groupName = guest_gN;
+          } else {
+            await removeUser(callee);
+            joinGroup(host_gN, user_callee.socket, "ANON");
+            user_callee.groupName = host_gN;
+          }
+        } else {
+          console.log("host, guest의 그룹 번호가 같습니다.");
+        }
       }
     } else if (!host_gN) {
       //guest x && host x
       user_caller.groupNumber = await makeGroup(user_caller.socket, "ANON");
-      console.log("2번", guest_gN, host_gN);
+      console.log("Caller가 만든 그룹 번호 :", user_caller.groupNumber);
     } else {
       // guest X && host O
       console.log("else일 때 hosst_gN: ", host_gN, "guest_gN: ", guest_gN);
     }
-
-    // if (guest_gN && host_gN) { // 둘 다 그룹이 있는데
-    //   if(guest_gN !== host_gN) { // 그룹 번호가 다르면 -> guest가 leave_group후 join
-    //     await socket.emit("leave_group", user_caller.socket.id, removePeerFace);
-    //     // joinGroup(host_gN, user_callee.socket, "ANON"); // callee(guest))가 들어감
-    //     host_gN = guest_gN;
-    //   }
-    // } else {
-    //   if(guest_gN === host_gN) {
-    //     const tempGroupNumber = makeGroup(user_caller.socket, "ANON");
-    //     host_gN = tempGroupNumber;
-    //     joinGroup(tempGroupNumber, user_callee.socket, "ANON");
-    //     guest_gN = tempGroupNumber;
-    //     console.log(host_gN, guest_gN);
-    //   }else{ // caller만 join
-    //     joinGroup(host_gN, user_callee.socket, "ANON");
-    //     guest_gN = host_gN;
-    //   }
-    // }
   });
  
   socket.on("offer", (offer, remoteSocketId, localNickname) => {
@@ -422,9 +414,8 @@ io.on("connection", function (socket) {
 //when caller make the room
 function makeGroup(socket, nickname) {
   console.log("makeGroup");
-  groupName = 1;
   initGroupObj = {
-    groupName,
+    groupName: ++groupName,
     currentNum: 0,
     users: [
       {
