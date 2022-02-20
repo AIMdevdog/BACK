@@ -50,6 +50,7 @@ let charMap = {}; //character information (x,y 등등)
 /* for group call */
 const groupCallName = 0; //CallName for temp
 const MAXIMUM = 5; //Call maximum
+let groupName = 0;
 let roomObjArr = {
   // {
   //   roomName,
@@ -64,7 +65,7 @@ let roomObjArr = {
 };
 let groupObjArr = [
   // {
-  //   roomName,
+  //   groupName,
   //   currentNum,
   //   users: [
   //     {
@@ -303,9 +304,6 @@ io.on("connection", function (socket) {
     });
   })
 
-
-
-
   /*
   1. 방원 -> 서버 -> 방장 (offer)
   2. 방장 -> 서버 -> 방원 (answer)
@@ -313,55 +311,6 @@ io.on("connection", function (socket) {
   4. 방장 -> 서버 -> 방원 (add ice) 
 */
 
-  socket.on("user_call", async ({ caller, callee }) => {
-    const user_caller = charMap[caller];
-    const user_callee = charMap[callee];
-
-    //callee의 방이 있으면 그냥 참가 함수(caller)
-    // caller 1 & callee 1 => 문제
-    // caller 0 & callee 1
-    // caller 1 & callee 0 => 문제
-    // caller 0 & callee 0
-    let guest_gN = user_callee.groupNumber;
-    let host_gN = user_caller.groupNumber;
-
-    console.log(guest_gN, host_gN);
-
-    if (guest_gN) {
-      if (!host_gN) {
-        await joinGroup(guest_gN, user_caller.socket, "ANON");
-        console.log("1번", guest_gN, host_gN);
-        user_caller.groupNumber = guest_gN;
-      }
-    } else if (!host_gN) {
-      //guest x && host x
-      user_caller.groupNumber = await makeGroup(user_caller.socket, "ANON");
-      console.log("2번", guest_gN, host_gN);
-    } else {
-      // guest X && host O
-      console.log("else일 때 hosst_gN: ", host_gN, "guest_gN: ", guest_gN);
-    }
-
-    // if (guest_gN && host_gN) { // 둘 다 그룹이 있는데
-    //   if(guest_gN !== host_gN) { // 그룹 번호가 다르면 -> guest가 leave_group후 join
-    //     await socket.emit("leave_group", user_caller.socket.id, removePeerFace);
-    //     // joinGroup(host_gN, user_callee.socket, "ANON"); // callee(guest))가 들어감
-    //     host_gN = guest_gN;
-    //   }
-    // } else {
-    //   if(guest_gN === host_gN) {
-    //     const tempGroupNumber = makeGroup(user_caller.socket, "ANON");
-    //     host_gN = tempGroupNumber;
-    //     joinGroup(tempGroupNumber, user_callee.socket, "ANON");
-    //     guest_gN = tempGroupNumber;
-    //     console.log(host_gN, guest_gN);
-    //   }else{ // caller만 join
-    //     joinGroup(host_gN, user_callee.socket, "ANON");
-    //     guest_gN = host_gN;
-    //   }
-    // }
-  });
- 
   socket.on("offer", (offer, remoteSocketId, localNickname) => {
     socket.to(remoteSocketId).emit("offer", offer, socket.id, localNickname);
   });
@@ -388,13 +337,10 @@ io.on("connection", function (socket) {
         // 거리가 멀어질 player의 Sid로 화상통화 그룹 정보에 저장된 동일한 Sid를 찾아서 그룹에서 삭제해준다
         if (removeSid === groupObjArr[i].users[j].socketId) {
           findGroupName = groupObjArr[i].groupName;
-          // console.log('######', groupObjArr[i].users)
-          console.log("leave", groupObjArr[i].groupName);
-          console.log(typeof(groupObjArr[i].groupName));
           socket.leave(groupObjArr[i].groupName);   //  socket Room 에서 삭제
-          console.log("socket에서 잘 삭제됐는지?", socket.rooms)
+          // console.log("socket에서 잘 삭제됐는지?", socket.rooms)
           groupObjArr[i].users.splice(j, 1)        // 우리가 따로 저장했던 배열에서도 삭제
-          console.log('*지웠나 체크*', groupObjArr[i].users)
+          // console.log('*지웠나 체크*', groupObjArr[i].users)
           if (groupObjArr[i].users.length === 0) { // for 빈 소켓 룸([]) 삭제 1
             deleted.push(i);
           }
@@ -421,10 +367,9 @@ io.on("connection", function (socket) {
 
 //when caller make the room
 function makeGroup(socket, nickname) {
-  console.log("makeGroup");
-  groupName = 1;
+  console.log( `socket ${socket.id}으로 makeGroup`, socket.id);
   initGroupObj = {
-    groupName,
+    groupName: ++groupName,
     currentNum: 0,
     users: [
       {
@@ -442,12 +387,10 @@ function makeGroup(socket, nickname) {
 //when callee join the room
 function joinGroup(groupName, socket, nickname) {
   console.log("joinGroup");
-  for (let i = 0; i < groupObjArr.length; ++i) {
-    
+  for (let i = 0; i < groupObjArr.length; ++i) { 
     console.log(`${i} 방 안에 있는 모든 유저의 소켓ID : `, groupObjArr[i].users);
     if (groupObjArr[i].groupName === groupName) {
       // Reject join the room
-
       if (groupObjArr[i].users.length >= MAXIMUM) {
         socket.emit("reject_join");
         return;
@@ -457,7 +400,7 @@ function joinGroup(groupName, socket, nickname) {
         socketId: socket.id,
         nickname,
       });
-      // ++groupObjArr[i].currentNum; 색제 예정
+      // ++groupObjArr[i].currentNum;
       
       socket.join(groupName);
       socket.emit("accept_join", groupObjArr[i].users);
