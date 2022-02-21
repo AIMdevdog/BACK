@@ -317,40 +317,40 @@ io.on("connection", function (socket) {
   socket.on("user_call", async ({ caller, callee }) => {
     const user_caller = charMap[caller];
     const user_callee = charMap[callee];
+    console.log("이것이 caller의 닉네임이다", user_caller.nickname);
 
     let guest_gN = user_callee.groupNumber;
     let host_gN = user_caller.groupNumber;
 
     console.log(guest_gN, host_gN);
 
-    if (guest_gN) {
+    if (guest_gN) { // 둘 중 한 명 Group 있을 때
       if (!host_gN) {
-        await joinGroup(guest_gN, user_caller.socket, "ANON");
+        await joinGroup(guest_gN, user_caller.socket, user_callee.nickname);
         user_caller.groupNumber = guest_gN;
         console.log(user_caller.groupNumber, user_callee.groupNumber);
-      } else { //guest_gN과 host_gN이 다를 경우를 추가
+      } else { // guest_gN과 host_gN이 다를 경우를 추가
         if (guest_gN != host_gN) {
           console.log("host, guest의 그룹 번호가 다릅니다.");
           if (guest_gN > host_gN) {
             await removeUser(caller);
-            joinGroup(guest_gN, user_caller.socket, "ANON");
+            joinGroup(guest_gN, user_caller.socket, user_callee.nickname);
             user_caller.groupName = guest_gN;
           } else {
             await removeUser(callee);
-            joinGroup(host_gN, user_callee.socket, "ANON");
+            joinGroup(host_gN, user_callee.socket, user.caller.nickname);
             user_callee.groupName = host_gN;
           }
         } else {
           console.log("host, guest의 그룹 번호가 같습니다.");
         }
       }
-    } else if (!host_gN) {
-      //guest x && host x
-      user_caller.groupNumber = await makeGroup(user_caller.socket, "ANON");
+    } else if (!host_gN) { // 둘 다 Group 없을 때 (guest X && host X)
+      user_caller.groupNumber = await makeGroup(user_caller.socket);
       console.log("Caller가 만든 그룹 번호 :", user_caller.groupNumber);
     } else {
       // guest X && host O
-      console.log("else일 때 hosst_gN: ", host_gN, "guest_gN: ", guest_gN);
+      console.log("else일 때 host_gN: ", host_gN, "guest_gN: ", guest_gN);
     }
   });
  
@@ -412,7 +412,7 @@ io.on("connection", function (socket) {
 });
 
 //when caller make the room
-function makeGroup(socket, nickname) {
+function makeGroup(socket) {
   console.log("makeGroup");
   initGroupObj = {
     groupName: ++groupName,
@@ -420,7 +420,7 @@ function makeGroup(socket, nickname) {
     users: [
       {
         socketId: socket.id,
-        nickname,
+        // nickname,
       },
     ],
   };
