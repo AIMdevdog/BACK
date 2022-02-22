@@ -50,7 +50,7 @@ let charMap = {}; //character information (x,y 등등)
 /* for group call */
 const groupCallName = 0; //CallName for temp
 let groupName = 0;
-const MAXIMUM = 5; //Call maximum
+const MAXIMUM = 10; //Call maximum
 let roomObjArr = {
   // {
   //   roomName,
