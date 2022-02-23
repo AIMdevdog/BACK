@@ -16,8 +16,6 @@ router.get("/", async (req, res) => {
       include: [Aim_user_info, Aim_map_images],
     });
 
-    console.log(findAllUserRoom);
-
     const needRoomInfo = findAllUserRoom.map((info) => {
       const {
         id,
@@ -42,6 +40,30 @@ router.get("/", async (req, res) => {
     });
 
     res.json(needRoomInfo);
+  } catch (e) {
+    console.log(e);
+  }
+});
+
+router.post("/delete", authUser, async (req, res) => {
+  try {
+    const { roomId } = req.body;
+    console.log(roomId);
+    const findUserRoom = await Aim_user_room.findOne({
+      where: {
+        id: roomId,
+      },
+    });
+    if (findUserRoom) {
+      findUserRoom.update({ status: 0 });
+
+      return res.json({ code: 200, msg: "완료되었습니다." });
+    } else {
+      return res.json({
+        code: 400,
+        msg: "삭제에 문제가 생겼습니다. 다시 시도해주세요.",
+      });
+    }
   } catch (e) {
     console.log(e);
   }

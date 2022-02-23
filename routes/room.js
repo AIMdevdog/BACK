@@ -26,6 +26,7 @@ router.post("/create", authUser, async (req, res) => {
       mapId,
       title,
       description,
+      status: 1,
     });
     res.json(result);
   } catch (e) {
