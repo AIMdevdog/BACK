@@ -9,7 +9,7 @@ const mysql = require("mysql");
 const { Aim_user_info } = require("../models");
 const jwt = require("jsonwebtoken");
 const authUser = require("./middlewares/authUser");
-const bcrypt = require("bcrypt");
+const bcrypt = require("bcryptjs");
 
 const router = express.Router();
 const privateKey = "session";
@@ -37,7 +37,8 @@ router.post("/login", async (req, res) => {
     if (!findUser) {
       res.json({ msg: "회원정보가 없습니다." });
     } else {
-      if (findUser.password === password) {
+      const doesPasswordMatch = bcrypt.compareSync(password, findUser.password);
+      if (doesPasswordMatch) {
         // 암호화 저장시 사용
         // if (await bcrypt.compare(findUser.password, password)) {
         const accessToken = jwt.sign(
@@ -107,28 +108,35 @@ router.post("/signup", async function (req, res) {
   const { email, password, nickname } = req.body;
   try {
     if (!email || !password || !nickname) {
-      return res.status(500).json({ msg: "값을 입력하십시오." });
+      return res.json({ msg: "값을 입력하십시오." });
     }
     const isExistUser = await Aim_user_info.findOne({
       where: {
         email,
       },
     });
-    if (isExistUser) {
-      return res.status(500).json({ msg: "중복된 이메일입니다." });
-    } else if (isExistUser.nickname === nickname) {
-      return res.status(500).json({ msg: "이미 존재하는 닉네임입니다."});
-    } else {
-      const result = await Aim_user_info.create({
-        email,
-        password,
+
+    const isExistUserNickname = await Aim_user_info.findOne({
+      where: {
         nickname,
-      });
-      if (result) {
-        return res.json({ msg: "회원가입이 완료되었습니다." });
-      } else {
-        return res.status(500).json({ msg: "회원가입에 실패했습니다." });
-      }
+      },
+    });
+
+    if (isExistUser) return res.json({ msg: "중복된 이메일입니다." });
+    if (isExistUserNickname) {
+      if (isExistUserNickname.nickname === nickname)
+        return res.json({ msg: "이미 존재하는 닉네임입니다." });
+    }
+
+    const result = await Aim_user_info.create({
+      email,
+      password,
+      nickname,
+    });
+    if (result) {
+      return res.json({ msg: "회원가입이 완료되었습니다." });
+    } else {
+      return res.json({ msg: "회원가입에 실패했습니다." });
     }
   } catch (e) {
     console.log(e);

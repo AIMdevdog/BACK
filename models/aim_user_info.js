@@ -28,7 +28,7 @@ module.exports = class Aim_user_info extends Sequelize.Model {
           unique: true,
         },
         password: {
-          type: Sequelize.STRING(20),
+          type: Sequelize.STRING(256),
         },
         nickname: {
           type: Sequelize.STRING(20),
