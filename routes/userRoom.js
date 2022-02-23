@@ -9,9 +9,14 @@ const authUser = require("./middlewares/authUser");
 router.get("/", async (req, res) => {
   try {
     const findAllUserRoom = await Aim_user_room.findAll({
+      where: {
+        status: 1,
+      },
       order: [["createdAt", "DESC"]],
       include: [Aim_user_info, Aim_map_images],
     });
+
+    console.log(findAllUserRoom);
 
     const needRoomInfo = findAllUserRoom.map((info) => {
       const {

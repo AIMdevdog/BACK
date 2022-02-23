@@ -16,6 +16,9 @@ module.exports = class Aim_user_room extends Sequelize.Model {
         description: {
           type: Sequelize.STRING(128),
         },
+        status: {
+          type: Sequelize.NUMBER(11),
+        },
       },
       {
         sequelize,
