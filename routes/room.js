@@ -2,7 +2,7 @@ const express = require("express");
 const router = express.Router();
 
 //DB 정보
-const { Aim_map_images, Aim_user_room, Aim_user_info } = require("../models");
+const { Aim_user_room } = require("../models");
 const authUser = require("./middlewares/authUser");
 
 router.get("/", authUser, async (req, res) => {

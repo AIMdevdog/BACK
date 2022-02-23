@@ -56,7 +56,7 @@ Aim_map_images.init(sequelize);
 Aim_character_images.init(sequelize);
 Aim_user_room.init(sequelize);
 
-Aim_user_info.associate(db);
+// Aim_user_info.associate(db);
 // Aim_map_images.associate(db);
 Aim_user_room.associate(db);
 

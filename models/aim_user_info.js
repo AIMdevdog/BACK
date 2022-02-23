@@ -50,10 +50,10 @@ module.exports = class Aim_user_info extends Sequelize.Model {
       }
     );
   }
-  static associate(db) {
-    db.Aim_user_info.hasMany(db.Aim_map_images, {
-      foreignKey: "hostId",
-      sourceKey: "id",
-    });
-  }
+  // static associate(db) {
+  //   db.Aim_user_info.hasMany(db.Aim_map_images, {
+  //     foreignKey: "hostId",
+  //     sourceKey: "id",
+  //   });
+  // }
 };
