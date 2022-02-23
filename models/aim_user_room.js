@@ -6,19 +6,15 @@ module.exports = class Aim_user_room extends Sequelize.Model {
       {
         hostId: {
           type: Sequelize.INTEGER(11),
-          defaultValue: "NULL",
         },
         mapId: {
           type: Sequelize.INTEGER(11),
-          defaultValue: "NULL",
         },
         title: {
-          type: Sequelize.STRING(100),
-          defaultValue: "NULL",
+          type: Sequelize.STRING(128),
         },
         description: {
-          type: Sequelize.STRING(100),
-          defaultValue: "NULL",
+          type: Sequelize.STRING(128),
         },
       },
       {

@@ -5,10 +5,10 @@ const router = express.Router();
 const { Aim_map_images, Aim_user_room, Aim_user_info } = require("../models");
 const authUser = require("./middlewares/authUser");
 
-router.get("/", async (req, res) => {
+router.get("/", authUser, async (req, res) => {
   try {
-    const findAllRoom = await Aim_map_images.findAll({
-      // order: ["createdAt", "ASC"]
+    const findAllRoom = await Aim_user_room.findAll({
+      order: [["createdAt", "DESC"]],
     });
     res.json(findAllRoom);
   } catch (e) {
@@ -18,14 +18,14 @@ router.get("/", async (req, res) => {
 
 router.post("/create", authUser, async (req, res) => {
   try {
-    const { image, title, desc } = req.body;
-    
+    const { mapId, title, description } = req.body;
+
     const { id } = req.user;
     const result = Aim_user_room.create({
       hostId: id,
-      mapId: image,
+      mapId,
       title,
-      desc,
+      description,
     });
     res.json(result);
   } catch (e) {
