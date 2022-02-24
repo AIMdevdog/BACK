@@ -87,6 +87,9 @@ let transports = [];     // [ { socketId1, roomName1, transport, consumer }, ...
 let producers = [];      // [ { socketId1, roomName1, producer, }, ... ]
 let consumers = [];      // [ { socketId1, roomName1, consumer, }, ... ]
 
+// WebRTC SFU (mediasoup)
+
+
 app.use(cors(corsOption));
 app.use(express.static("public"));
 
@@ -262,7 +265,7 @@ const createWorker = async () => {
     rtcMinPort: 2000,
     rtcMaxPort: 2020,
   })
-  console.log(`worker pid ${worker.pid}`)
+  // console.log(`worker pid ${worker.pid}`)
 
   worker.on('died', error => {
     // This implies something serious happened, so kill the application
@@ -535,6 +538,45 @@ io.on("connection", function (socket) {
       })
   })
 
+  const createWebRtcTransport = async (router) => {
+    return new Promise(async (resolve, reject) => {
+      try {
+        // https://mediasoup.org/documentation/v3/mediasoup/api/#WebRtcTransportOptions
+        const webRtcTransport_options = {
+          listenIps: [
+            {
+              ip: '0.0.0.0', // replace with relevant IP address
+              announcedIp: '10.0.0.115',
+            }
+          ],
+          enableUdp: true,
+          enableTcp: true,
+          preferUdp: true,
+        }
+  
+        // https://mediasoup.org/documentation/v3/mediasoup/api/#router-createWebRtcTransport
+        let transport = await router.createWebRtcTransport(webRtcTransport_options)
+        console.log(`transport id: ${transport.id}`)
+  
+        transport.on('dtlsstatechange', dtlsState => {
+          if (dtlsState === 'closed') {
+            transport.close()
+          }
+        })
+  
+        transport.on('close', () => {
+          console.log('transport closed')
+        })
+  
+        resolve(transport)
+  
+      } catch (error) {
+        reject(error)
+      }
+    })
+  }
+  
+
   const addTransport = (transport, roomName, consumer) => {
 
     transports = [
@@ -641,6 +683,21 @@ io.on("connection", function (socket) {
       }
     })
   }
+
+  socket.on('getProducers', callback => {
+    //return all producer transports
+    const { roomName } = peers[socket.id]
+
+    let producerList = []
+    producers.forEach(producerData => {
+      if (producerData.socketId !== socket.id && producerData.roomName === roomName) {
+        producerList = [...producerList, producerData.producer.id]
+      }
+    })
+
+    // return the producer list back to the client
+    callback(producerList)
+  })
   
 const createWebRtcTransport = async (router) => {
   return new Promise(async (resolve, reject) => {
