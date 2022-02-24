@@ -26,6 +26,7 @@ router.get("/", async (req, res) => {
         Aim_user_info,
         Aim_map_image,
       } = info;
+      
       const { id: hostId } = Aim_user_info;
       const { image } = Aim_map_image;
       return {

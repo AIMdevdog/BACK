@@ -65,7 +65,7 @@ let roomObjArr = {
 };
 let groupObjArr = [
   // {
-  //   roomName,
+  //   groupName,
   //   currentNum,
   //   users: [
   //     {
@@ -366,6 +366,25 @@ io.on("connection", function (socket) {
     if (socket.rooms.has(roomName)) {
       socket.to(roomName).emit("chat", message);
     }
+  });
+
+  socket.on("ArtsAddr", (artsAddr, SocketId) => {
+    io.emit("ShareAddr", artsAddr, SocketId);
+
+    // let findGroupName;
+    // for (let i = 0; i < groupObjArr.length; i++) {
+    //   for (let j = 0; j < groupObjArr[i].users.length; j++) {
+    //     if (SocketId === groupObjArr[i].users[j].socketId) {
+    //       findGroupName = groupObjArr[i].groupName;
+    //       console.log('findGroupName', findGroupName);
+    //       console.log(groupObjArr[i].groupName);
+    //       socket.to(findGroupName).emit("ShareAddr", 
+    //         artsAddr,
+    //         SocketId,
+    //       );
+    //     };
+    //   };
+    // };
   });
 
   function removeUser(removeSid) {
