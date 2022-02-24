@@ -372,8 +372,8 @@ io.on("connection", function (socket) {
     io.emit("ShareAddr", artsAddr, SocketId);
   });
 
-  socket.on("cursorPosition", (cursorX, cursorY) => {
-    socket.broadcast.emit("shareCursorPosition", cursorX, cursorY);
+  socket.on("cursorPosition", (cursorX, cursorY, socketId) => {
+    socket.broadcast.emit("shareCursorPosition", cursorX, cursorY, socketId);
   });
 
   function removeUser(removeSid) {
