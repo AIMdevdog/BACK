@@ -370,21 +370,10 @@ io.on("connection", function (socket) {
 
   socket.on("ArtsAddr", (artsAddr, SocketId) => {
     io.emit("ShareAddr", artsAddr, SocketId);
+  });
 
-    // let findGroupName;
-    // for (let i = 0; i < groupObjArr.length; i++) {
-    //   for (let j = 0; j < groupObjArr[i].users.length; j++) {
-    //     if (SocketId === groupObjArr[i].users[j].socketId) {
-    //       findGroupName = groupObjArr[i].groupName;
-    //       console.log('findGroupName', findGroupName);
-    //       console.log(groupObjArr[i].groupName);
-    //       socket.to(findGroupName).emit("ShareAddr", 
-    //         artsAddr,
-    //         SocketId,
-    //       );
-    //     };
-    //   };
-    // };
+  socket.on("cursorPosition", (cursorX, cursorY) => {
+    socket.broadcast.emit("shareCursorPosition", cursorX, cursorY);
   });
 
   function removeUser(removeSid) {
@@ -401,7 +390,7 @@ io.on("connection", function (socket) {
           socket.leave(groupObjArr[i].groupName); //  socket Room 에서 삭제
           console.log("socket에서 잘 삭제됐는지?", socket.rooms);
           groupObjArr[i].users.splice(j, 1); // 우리가 따로 저장했던 배열에서도 삭제
-          console.log("*지웠나 체크*", groupObjArr[i].users);
+          console.log("*지웠나 체크 *", groupObjArr[i].users);
           if (groupObjArr[i].users.length === 0) {
             // for 빈 소켓 룸([]) 삭제 1
             deleted.push(i);
