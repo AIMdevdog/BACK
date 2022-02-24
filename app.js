@@ -23,10 +23,10 @@ const app = express();
 const httpServer = http.createServer(app);
 const PORT = 8000;
 const server = require("socket.io")(httpServer, {
-  // cors: {
-  //   origin: ["http://localhost:3000", "https://dev-team-aim.com"],
-  //   credentials: true,
-  // },
+  cors: {
+    origin: ["http://localhost:3000", "https://dev-team-aim.com"],
+    credentials: true,
+  },
 });
 const io = server.of('/mediasoup');
 
