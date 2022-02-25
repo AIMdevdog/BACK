@@ -572,7 +572,6 @@ io.on("connection", function (socket) {
     }
   }
 
-
   const addProducer = (producer, roomName) => {
     producers = [
       ...producers,
@@ -781,7 +780,7 @@ function makeGroup(socket) {
   groupObjArr.push(initGroupObj);
   socket.join(groupName);
   console.log("join:", groupName);
-  socket.emit("accept_join", [1]);
+  socket.emit("accept_join", initGroupObj.groupName); // [1] 배열 수정 필요
   return groupName;
 }
 //when callee join the room
@@ -807,7 +806,7 @@ function joinGroup(groupName, socket, nickname) {
       // ++groupObjArr[i].currentNum; 색제 예정
 
       socket.join(groupName);
-      socket.emit("accept_join", groupObjArr[i].users);
+      socket.emit("accept_join", groupObjArr[i].groupName);
     }
   }
 }
