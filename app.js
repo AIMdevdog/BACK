@@ -368,8 +368,10 @@ io.on("connection", function (socket) {
     }
   });
 
-  socket.on("ArtsAddr", (artsAddr, SocketId) => {
-    io.emit("ShareAddr", artsAddr, SocketId);
+  socket.on("ArtsAddr", (artsAddr, sender, receivers) => {
+    receivers.forEach((eachReceiver) => {
+      socket.to(eachReceiver).emit("ShareAddr", artsAddr, sender); //nickname 추가
+    });
   });
 
   socket.on("cursorPosition", (cursorX, cursorY, socketId) => {
