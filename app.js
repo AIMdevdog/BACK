@@ -259,7 +259,7 @@ broadcastState();
 const createWorker = async () => {
   worker = await mediasoup.createWorker({
     rtcMinPort: 2000,
-    rtcMaxPort: 2020,
+    rtcMaxPort: 2020, // 20명까지 됨
   })
   console.log(`worker pid ${worker.pid}`)
 
@@ -610,8 +610,8 @@ const createWebRtcTransport = async (router) => {
       const webRtcTransport_options = {
         listenIps: [
           {
-            ip: '0.0.0.0', // replace with relevant IP address
-            announcedIp: '10.0.0.115',
+            ip: '172.20.10.2', // replace with relevant IP address 여기에 aws IP주소 넣으면 됨*!!
+            // announcedIp: '10.0.0.115',
           }
         ],
         enableUdp: true,
