@@ -555,9 +555,22 @@ io.on("connection", function (socket) {
 
 
 
+  const addConsumer = (consumer, roomName) => {
+    // add the consumer to the consumers list
+    consumers = [
+      ...consumers,
+      { socketId: socket.id, consumer, roomName, }
+    ]
 
-
-
+    // add the consumer id to the peers list
+    peers[socket.id] = {
+      ...peers[socket.id],
+      consumers: [
+        ...peers[socket.id].consumers,
+        consumer.id,
+      ]
+    }
+  }
 
 
   const addProducer = (producer, roomName) => {
@@ -707,6 +720,7 @@ socket.on('consume', async ({ rtpCapabilities, remoteProducerId, serverConsumerT
     await consumer.resume()
   })
 });
+
 
 // ------------------------ ^ SFU
 
