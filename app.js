@@ -22,13 +22,13 @@ const app = express();
 
 const httpServer = http.createServer(app);
 const PORT = 8000;
-const server = require("socket.io")(httpServer, {
+const io = require("socket.io")(httpServer, {
   cors: {
     origin: ["http://localhost:3000", "https://dev-team-aim.com"],
     credentials: true,
   },
 });
-const io = server.of('/mediasoup');
+// const io = server.of('/mediasoup');
 
 // WebRTC SFU (mediasoup)
 let worker;
