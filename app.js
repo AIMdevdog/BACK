@@ -259,7 +259,7 @@ broadcastState();
 const createWorker = async () => {
   worker = await mediasoup.createWorker({
     rtcMinPort: 2000,
-    rtcMaxPort: 2020, // 20명까지 됨
+    rtcMaxPort: 2020, // connection 제한 갯수(20개) 
   })
   console.log(`worker pid ${worker.pid}`)
 
@@ -270,10 +270,10 @@ const createWorker = async () => {
   })
 
   return worker
-}
+};
 
 // We create a Worker as soon as our application starts
-worker = createWorker()
+worker = createWorker();
 
 // This is an Array of RtpCapabilities
 // https://mediasoup.org/documentation/v3/mediasoup/rtp-parameters-and-capabilities/#RtpCodecCapability
@@ -421,10 +421,10 @@ io.on("connection", function (socket) {
     }
   });
 
-  // WebRTC SFU (mediasoup)
+  // WebRTC SFU (mediasoup)           // roomName <== groupName(int)
   socket.on('getRtpCapabilities', async (roomName, callback) => {
     const router1 = await createRoom(roomName, socket.id);
-
+    console.log('~~~Router1 생성 완료다냥~~~');
     peers[socket.id] = {
       socket,
       roomName,           // Name for the Router this Peer joined
@@ -452,7 +452,7 @@ io.on("connection", function (socket) {
     // none of the two are required
     let router1
     let peers = []
-    if (rooms[roomName]) {
+    if (rooms[roomName]) { // let rooms = { roomName1: { Router, rooms: [ sicketId1, ... ] }, ...}
       router1 = rooms[roomName].router
       peers = rooms[roomName].peers || []
     } else {
@@ -525,33 +525,34 @@ io.on("connection", function (socket) {
   }
 
   // see client's socket.emit('transport-produce', ...)
-  socket.on('transport-produce', async ({ kind, rtpParameters, appData }, callback) => {
+  socket.on('transport-produce', async ({ kind, rtpParameters, appData, track }, callback) => {
     // call produce based on the prameters from the client
     const producer = await getTransport(socket.id).produce({
       kind,
       rtpParameters,
-    })
+      track,
+    });
 
     // add producer to the producers array
-    const { roomName } = peers[socket.id]
+    const { roomName } = peers[socket.id];
 
-    addProducer(producer, roomName)
+    addProducer(producer, roomName);
 
-    informConsumers(roomName, socket.id, producer.id)
+    informConsumers(roomName, socket.id, producer.id);
 
-    console.log('Producer ID: ', producer.id, producer.kind)
+    // console.log('Producer ID: ', producer.id, producer.kind);
 
     producer.on('transportclose', () => {
       console.log('transport for this producer closed ')
       producer.close()
-    })
+    });
 
     // Send back to the client the Producer's id
     callback({
       id: producer.id,
       producersExist: producers.length>1 ? true : false
-    })
-  })
+    });
+  });
 
 
 
@@ -585,7 +586,7 @@ io.on("connection", function (socket) {
         producer.id,
       ]
     }
-  }
+  };
 
   socket.on('getProducers', callback => {
     //return all producer transports
