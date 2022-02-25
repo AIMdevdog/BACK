@@ -422,7 +422,7 @@ io.on("connection", function (socket) {
   });
 
   // WebRTC SFU (mediasoup)
-  socket.on('getRtpCapabilities', async (callback) => {
+  socket.on('getRtpCapabilities', async (roomName, callback) => {
     const router1 = await createRoom(roomName, socket.id);
 
     peers[socket.id] = {
