@@ -296,7 +296,7 @@ const mediaCodecs = [
   },
 ]
 
-io.on("connection", function (socket) {
+io.on("connection", async function (socket) {
   console.log(`${socket.id} has joined!`);
   socket.on("disconnect", function (reason) {
     console.log(`${socket.id} has leaved! (${reason})`);
@@ -305,6 +305,22 @@ io.on("connection", function (socket) {
     socket.broadcast.emit("leave_user", {
       id: socket.id,
     });
+
+    // WebRTC SFU (mediasoup)
+    // do some cleanup
+    console.log('peer disconnected')
+    consumers = removeItems(consumers, socket.id, 'consumer')
+    producers = removeItems(producers, socket.id, 'producer')
+    transports = removeItems(transports, socket.id, 'transport')
+
+    const { roomName } = peers[socket.id]
+    delete peers[socket.id]
+
+    // remove socket from room
+    rooms[roomName] = {
+      router: rooms[roomName].router,
+      peers: rooms[roomName].peers.filter(socketId => socketId !== socket.id)
+    }
   });
 
   socket.on("input", function (data) {
@@ -457,6 +473,7 @@ io.on("connection", function (socket) {
       peers = rooms[roomName].peers || []
     } else {
       router1 = await worker.createRouter({ mediaCodecs, })
+      console.log("----------------- 라우터 생성", router1)
     }
     
     console.log(`Router ID: ${router1.id}`, peers.length)
@@ -475,7 +492,6 @@ io.on("connection", function (socket) {
 
     // get Router (Room) object this peer is in based on RoomName
     const router = rooms[roomName].router
-
 
     createWebRtcTransport(router).then(
       transport => {
@@ -554,7 +570,14 @@ io.on("connection", function (socket) {
     });
   });
 
-
+  // see client's socket.emit('transport-recv-connect', ...)
+  socket.on('transport-recv-connect', async ({ dtlsParameters, serverConsumerTransportId }) => {
+    console.log(`DTLS PARAMS: ${dtlsParameters}`)
+    const consumerTransport = transports.find(transportData => (
+      transportData.consumer && transportData.transport.id == serverConsumerTransportId
+    )).transport
+    await consumerTransport.connect({ dtlsParameters })
+  })
 
   const addConsumer = (consumer, roomName) => {
     // add the consumer to the consumers list
@@ -623,8 +646,8 @@ const createWebRtcTransport = async (router) => {
       const webRtcTransport_options = {
         listenIps: [
           {
-            ip: '172.20.10.2', // replace with relevant IP address 여기에 aws IP주소 넣으면 됨*!!
-            // announcedIp: '10.0.0.115',
+            ip: '0.0.0.0', // replace with relevant IP address 여기에 aws IP주소 넣으면 됨*!!
+            announcedIp: '127.0.0.1',
           }
         ],
         enableUdp: true,
@@ -763,6 +786,17 @@ socket.on('consume', async ({ rtpCapabilities, remoteProducerId, serverConsumerT
     });
   };
 });
+
+const removeItems = (items, socketId, type) => {
+  items.forEach(item => {
+    if (item.socketId === socket.id) {
+      item[type].close()
+    }
+  })
+  items = items.filter(item => item.socketId !== socket.id)
+
+  return items
+}
 
 //when caller make the room
 function makeGroup(socket) {
