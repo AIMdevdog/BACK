@@ -531,12 +531,12 @@ io.on("connection", function (socket) {
       kind,
       rtpParameters,
     })
-
+    
     // add producer to the producers array
     const { roomName } = peers[socket.id]
-
+    console.log("producer", producer)
     addProducer(producer, roomName)
-
+    console.log('길이', producers.length);
     informConsumers(roomName, socket.id, producer.id)
 
     console.log('Producer ID: ', producer.id, producer.kind)
@@ -622,7 +622,7 @@ const createWebRtcTransport = async (router) => {
       const webRtcTransport_options = {
         listenIps: [
           {
-            ip: '172.20.10.2', // replace with relevant IP address 여기에 aws IP주소 넣으면 됨*!!
+            ip: '0.0.0.0', // replace with relevant IP address 여기에 aws IP주소 넣으면 됨*!!
             // announcedIp: '10.0.0.115',
           }
         ],
