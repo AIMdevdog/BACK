@@ -623,7 +623,7 @@ const createWebRtcTransport = async (router) => {
         listenIps: [
           {
             ip: '0.0.0.0', // replace with relevant IP address 여기에 aws IP주소 넣으면 됨*!!
-            // announcedIp: '10.0.0.115',
+            announcedIp: '143.248.232.61',
           }
         ],
         enableUdp: true,
