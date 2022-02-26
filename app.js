@@ -296,31 +296,17 @@ const mediaCodecs = [
   },
 ]
 
-io.on("connection", async function (socket) {
+io.on("connection", function (socket) {
   console.log(`${socket.id} has joined!`);
   socket.on("disconnect", function (reason) {
-    console.log(`${socket.id} has leaved! (${reason})`);
-    removeUser(socket.id);
+    // console.log(`${socket.id} has leaved! (${reason})`);
+    if (peers[socket.id]) {
+      removeUser(socket.id);
+    }
     leaveGame(socket);
     socket.broadcast.emit("leave_user", {
       id: socket.id,
     });
-
-    // WebRTC SFU (mediasoup)
-    // do some cleanup
-    console.log('peer disconnected')
-    consumers = removeItems(consumers, socket.id, 'consumer')
-    producers = removeItems(producers, socket.id, 'producer')
-    transports = removeItems(transports, socket.id, 'transport')
-
-    const { roomName } = peers[socket.id]
-    delete peers[socket.id]
-
-    // remove socket from room
-    rooms[roomName] = {
-      router: rooms[roomName].router,
-      peers: rooms[roomName].peers.filter(socketId => socketId !== socket.id)
-    }
   });
 
   socket.on("input", function (data) {
@@ -440,7 +426,7 @@ io.on("connection", async function (socket) {
   // WebRTC SFU (mediasoup)           // roomName <== groupName(int)
   socket.on('getRtpCapabilities', async (roomName, callback) => {
     const router1 = await createRoom(roomName, socket.id);
-    console.log('~~~Router1 생성 완료다냥~~~');
+    // console.log('~~~Router1 생성 완료다냥~~~');
     peers[socket.id] = {
       socket,
       roomName,           // Name for the Router this Peer joined
@@ -452,6 +438,7 @@ io.on("connection", async function (socket) {
         isAdmin: false,   // Is this Peer the Admin?
       }
     }
+    console.log("*************** peers : ", peers)
 
     // get Router RTP Capabilities
     const rtpCapabilities = router1.rtpCapabilities
@@ -473,10 +460,10 @@ io.on("connection", async function (socket) {
       peers = rooms[roomName].peers || []
     } else {
       router1 = await worker.createRouter({ mediaCodecs, })
-      console.log("----------------- 라우터 생성", router1)
+      // console.log("----------------- 라우터 생성", router1)
     }
     
-    console.log(`Router ID: ${router1.id}`, peers.length)
+    // console.log(`Router ID: ${router1.id}`, peers.length)
 
     rooms[roomName] = {
       router: router1,
@@ -530,7 +517,7 @@ io.on("connection", async function (socket) {
 
   // see client's socket.emit('transport-connect', ...)
   socket.on('transport-connect', ({ dtlsParameters }) => {
-    console.log('DTLS PARAMS... ', { dtlsParameters })
+    // console.log('DTLS PARAMS... ', { dtlsParameters })
     
     getTransport(socket.id).connect({ dtlsParameters })
   })
@@ -559,7 +546,7 @@ io.on("connection", async function (socket) {
     // console.log('Producer ID: ', producer.id, producer.kind);
 
     producer.on('transportclose', () => {
-      console.log('transport for this producer closed ')
+      // console.log('transport for this producer closed ')
       producer.close()
     });
 
@@ -572,7 +559,7 @@ io.on("connection", async function (socket) {
 
   // see client's socket.emit('transport-recv-connect', ...)
   socket.on('transport-recv-connect', async ({ dtlsParameters, serverConsumerTransportId }) => {
-    console.log(`DTLS PARAMS: ${dtlsParameters}`)
+    // console.log(`DTLS PARAMS: ${dtlsParameters}`)
     const consumerTransport = transports.find(transportData => (
       transportData.consumer && transportData.transport.id == serverConsumerTransportId
     )).transport
@@ -627,7 +614,7 @@ io.on("connection", async function (socket) {
   })
 
   const informConsumers = (roomName, socketId, id) => {
-    console.log(`just joined, id ${id} ${roomName}, ${socketId}`)
+    // console.log(`just joined, id ${id} ${roomName}, ${socketId}`)
     // A new producer just joined
     // let all consumers to consume this producer
     producers.forEach(producerData => {
@@ -657,7 +644,7 @@ const createWebRtcTransport = async (router) => {
 
       // https://mediasoup.org/documentation/v3/mediasoup/api/#router-createWebRtcTransport
       let transport = await router.createWebRtcTransport(webRtcTransport_options)
-      console.log(`transport id: ${transport.id}`)
+      // console.log(`transport id: ${transport.id}`)
 
       transport.on('dtlsstatechange', dtlsState => {
         if (dtlsState === 'closed') {
@@ -725,7 +712,7 @@ socket.on('consume', async ({ rtpCapabilities, remoteProducerId, serverConsumerT
         }
 
         // send the parameters to the client
-        callback({ params })
+        callback({ params }, socket.id)
       }
     } catch (error) {
       console.log(error.message)
@@ -738,7 +725,7 @@ socket.on('consume', async ({ rtpCapabilities, remoteProducerId, serverConsumerT
   })
 
   socket.on('consumer-resume', async ({ serverConsumerId }) => {
-    console.log('consumer resume')
+    // console.log('consumer resume')
     const { consumer } = consumers.find(consumerData => consumerData.consumer.id === serverConsumerId)
     await consumer.resume()
   })
@@ -754,12 +741,12 @@ socket.on('consume', async ({ rtpCapabilities, remoteProducerId, serverConsumerT
         if (removeSid === groupObjArr[i].users[j].socketId) {
           findGroupName = groupObjArr[i].groupName;
           // console.log('######', groupObjArr[i].users)
-          console.log("leave", groupObjArr[i].groupName);
-          console.log(typeof groupObjArr[i].groupName);
+          // console.log("leave", groupObjArr[i].groupName);
+          // console.log(typeof groupObjArr[i].groupName);
           socket.leave(groupObjArr[i].groupName); //  socket Room 에서 삭제
-          console.log("socket에서 잘 삭제됐는지?", socket.rooms);
+          // console.log("socket에서 잘 삭제됐는지?", socket.rooms);
           groupObjArr[i].users.splice(j, 1); // 우리가 따로 저장했던 배열에서도 삭제
-          console.log("*지웠나 체크*", groupObjArr[i].users);
+          // console.log("*지웠나 체크*", groupObjArr[i].users);
           if (groupObjArr[i].users.length === 0) {
             // for 빈 소켓 룸([]) 삭제 1
             deleted.push(i);
@@ -772,28 +759,54 @@ socket.on('consume', async ({ rtpCapabilities, remoteProducerId, serverConsumerT
       // for 빈 소켓 룸([]) 삭제 2
       groupObjArr.splice(deleted[i], 1);
     }
+
+    // WebRTC SFU (mediasoup)
+    // do some cleanup
+    // console.log('peer disconnected')
+    consumers = removeItems(consumers, removeSid, 'consumer')
+    producers = removeItems(producers, removeSid, 'producer')
+    transports = removeItems(transports, removeSid, 'transport')
+
+    const roomName = peers[removeSid].roomName
+    // console.log("***************", removeSid)
+    // console.log("***************", peers[removeSid])
+    delete peers[removeSid]
+
+    // remove socket from room
+    rooms[roomName] = {
+      router: rooms[roomName].router,
+      peers: rooms[roomName].peers.filter(socketId => socketId !== removeSid)
+    }
+    // ^ WebRTC SFU (mediasoup) ^
+
+
     console.log("____________leave_group____________");
     socket.to(findGroupName).emit("leave_succ", {
       removeSid,
     });
     charMap[removeSid].groupNumber = 0;
   
-
-    socket.on("leave_Group", (removeSid) => {
-      console.log("________ㅠㅠ 멀어졌다..____________ sid = ", removeSid);
-      // 그룹 넘버 초기화
-      removeUser(removeSid);
-    });
+    // socket.on("leave_Group", (removeSid) => {
+    //   console.log("________ㅠㅠ 멀어졌다..____________ sid = ", removeSid);
+    //   // 그룹 넘버 초기화
+    //   removeUser(removeSid);
+    // });
   };
+
+  socket.on("leave_Group", (removeSid) => {
+    console.log("________ㅠㅠ 멀어졌다..____________ sid = ", removeSid);
+    // 그룹 넘버 초기화
+    removeUser(removeSid);
+  });
 });
 
 const removeItems = (items, socketId, type) => {
   items.forEach(item => {
-    if (item.socketId === socket.id) {
+    if (item.socketId === socketId) {
       item[type].close()
     }
   })
-  items = items.filter(item => item.socketId !== socket.id)
+  items = items.filter(item => item.socketId !== socketId)
 
   return items
 }
