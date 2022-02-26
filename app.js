@@ -259,7 +259,7 @@ broadcastState();
 const createWorker = async () => {
   worker = await mediasoup.createWorker({
     rtcMinPort: 2000,
-    rtcMaxPort: 2020, // connection 제한 갯수(20개) 
+    rtcMaxPort: 2150, // connection 개수 150개까지 가능 (user수가 n일 때 connection 개수 = n^2)
   })
   console.log(`worker pid ${worker.pid}`)
 
