@@ -24,8 +24,8 @@ const config = require("./config");
 const app = express();
 
 const options = {
-  key: fs.readFileSync(config.sslKey),
-  cert: fs.readFileSync(config.sslCrt),
+  // key: fs.readFileSync(config.sslKey),
+  // cert: fs.readFileSync(config.sslCrt),
 };
 
 const httpsServer = https.createServer(options, app);
@@ -289,22 +289,7 @@ worker = createWorker();
 // https://mediasoup.org/documentation/v3/mediasoup/rtp-parameters-and-capabilities/#RtpCodecCapability
 // list of media codecs supported by mediasoup ...
 // https://github.com/versatica/mediasoup/blob/v3/src/supportedRtpCapabilities.ts
-const mediaCodecs = [
-  {
-    kind: "audio",
-    mimeType: "audio/opus",
-    clockRate: 48000,
-    channels: 2,
-  },
-  {
-    kind: "video",
-    mimeType: "video/VP8",
-    clockRate: 90000,
-    parameters: {
-      "x-google-start-bitrate": 1000,
-    },
-  },
-];
+const { mediaCodecs } = config.mediasoup.router;
 
 io.on("connection", function (socket) {
   console.log(`${socket.id} has joined!`);
