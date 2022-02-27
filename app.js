@@ -648,7 +648,7 @@ io.on("connection", function (socket) {
           listenIps: [
             {
               ip: "172.31.85.197", // replace with relevant IP address
-              announcedIp: "52.90.35.199", // replace with relevant IP address 여기에 aws IP주소 넣으면 됨*!!
+              // announcedIp: "52.90.35.199", // replace with relevant IP address 여기에 aws IP주소 넣으면 됨*!!
               // ip: "test-server.dev-team-aim.com", // replace with relevant IP address 여기에 aws IP주소 넣으면 됨*!!
               // ip: "192.168.0.47", // replace with relevant IP address 여기에 aws IP주소 넣으면 됨*!!
               // announcedIp: "127.0.0.1",
