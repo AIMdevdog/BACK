@@ -22,23 +22,23 @@ const userRoomRouter = require("./routes/userRoom");
 const app = express();
 
 const options = {
-  // ca: fs.readFileSync(
-  //   "/etc/letsencrypt/live/test-server.dev-team-aim.com/fullchain.pem",
-  //   "utf-8"
-  // ),
-  // key: fs.readFileSync(
-  //   "/etc/letsencrypt/live/test-server.dev-team-aim.com/privkey.pem",
-  //   "utf-8"
-  // ),
-  // cert: fs.readFileSync(
-  //   "/etc/letsencrypt/live/test-server.dev-team-aim.com/cert.pem",
-  //   "utf-8"
-  // ),
+  ca: fs.readFileSync(
+    "/etc/letsencrypt/live/test-server.dev-team-aim.com/fullchain.pem",
+    "utf-8"
+  ),
+  key: fs.readFileSync(
+    "/etc/letsencrypt/live/test-server.dev-team-aim.com/privkey.pem",
+    "utf-8"
+  ),
+  cert: fs.readFileSync(
+    "/etc/letsencrypt/live/test-server.dev-team-aim.com/cert.pem",
+    "utf-8"
+  ),
 };
 
-const httpServer = http.createServer(options, app);
+const httpsServer = https.createServer(options, app);
 const PORT = 8000;
-const io = require("socket.io")(httpServer, {
+const io = require("socket.io")(httpsServer, {
   cors: {
     origin: ["http://localhost:3000", "https://dev-team-aim.com"],
     credentials: true,
