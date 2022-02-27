@@ -20,7 +20,7 @@ const getLocalIp = () => {
 module.exports = {
   listenIp: "0.0.0.0",
   listenPort: 8000,
-  sslCrt: "/etc/letsencrypt/live/test-server.dev-team-aim.com/cert.pem",
+  sslCrt: "/etc/letsencrypt/live/test-server.dev-team-aim.com/fullchain.pem",
   sslKey: "/etc/letsencrypt/live/test-server.dev-team-aim.com/privkey.pem",
 
   mediasoup: {
