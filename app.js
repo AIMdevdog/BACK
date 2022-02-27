@@ -23,16 +23,13 @@ const app = express();
 
 const options = {
   ca: fs.readFileSync(
-    "/etc/letsencrypt/live/test-server.dev-team-aim.com/fullchain.pem",
-    "utf-8"
+    "/etc/letsencrypt/live/test-server.dev-team-aim.com/fullchain.pem"
   ),
   key: fs.readFileSync(
-    "/etc/letsencrypt/live/test-server.dev-team-aim.com/privkey.pem",
-    "utf-8"
+    "/etc/letsencrypt/live/test-server.dev-team-aim.com/privkey.pem"
   ),
   cert: fs.readFileSync(
-    "/etc/letsencrypt/live/test-server.dev-team-aim.com/cert.pem",
-    "utf-8"
+    "/etc/letsencrypt/live/test-server.dev-team-aim.com/cert.pem"
   ),
 };
 
@@ -660,6 +657,7 @@ io.on("connection", function (socket) {
               //
             },
           ],
+          listenPort: 8000,
           enableUdp: true,
           enableTcp: true,
           preferUdp: true,
