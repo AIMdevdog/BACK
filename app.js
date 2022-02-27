@@ -639,7 +639,7 @@ io.on("connection", function (socket) {
         const webRtcTransport_options = {
           listenIps: [
             {
-              ip: "172.31.85.197", // replace with relevant IP address 여기에 aws IP주소 넣으면 됨*!!
+              ip: "99.86.186.28", // replace with relevant IP address 여기에 aws IP주소 넣으면 됨*!!
               // ip: "192.168.0.47", // replace with relevant IP address 여기에 aws IP주소 넣으면 됨*!!
               // announcedIp: "127.0.0.1",
               // announcedIp: "52.85.151.17",
