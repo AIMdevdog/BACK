@@ -635,7 +635,7 @@ io.on("connection", function (socket) {
         const webRtcTransport_options = {
           listenIps: [
             {
-              ip: "https://d2ri7cyfi98bjj.cloudfront.net", // replace with relevant IP address 여기에 aws IP주소 넣으면 됨*!!
+              ip: "52.90.35.199", // replace with relevant IP address 여기에 aws IP주소 넣으면 됨*!!
               // announcedIp: '127.0.0.1',
             },
           ],
