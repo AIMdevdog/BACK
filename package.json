@@ -16,6 +16,7 @@
     "express-session": "^1.17.2",
     "http": "^0.0.1-security",
     "http-errors": "~1.6.3",
+    "httpolyglot": "^0.1.2",
     "jade": "~1.11.0",
     "jsonwebtoken": "^8.5.1",
     "loadsh": "^0.0.4",
