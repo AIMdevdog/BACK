@@ -24,7 +24,7 @@ const httpServer = http.createServer(app);
 const PORT = 8000;
 const io = require("socket.io")(httpServer, {
   cors: {
-    origin: ["http://localhost:3000", "https://dev-team-aim.com"],
+    origin: ["http://localhost:3000", "https://aim-devdog.herokuapp.com/"],
     credentials: true,
   },
 });
