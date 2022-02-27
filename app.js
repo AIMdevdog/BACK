@@ -32,9 +32,9 @@ const options = {
   ),
 };
 
-const httpServer = https.createServer(app, options);
+const httpsServer = https.createServer(app, options);
 const PORT = 8000;
-const io = require("socket.io")(httpServer, {
+const io = require("socket.io")(httpsServer, {
   cors: {
     origin: ["http://localhost:3000", "https://dev-team-aim.com"],
     credentials: true,
@@ -134,7 +134,7 @@ app.use(function (err, req, res, next) {
   res.render("error");
 });
 
-httpServer.listen(process.env.PORT || 8000, () => {
+httpsServer.listen(process.env.PORT || 8000, () => {
   console.log(`Server running on ${PORT}`);
 });
 
