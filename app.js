@@ -368,9 +368,10 @@ io.on("connection", function (socket) {
     }
   });
 
-  socket.on("ArtsAddr", (artsAddr, sender, receivers) => {
+  socket.on("ArtsAddr", (sender, receivers) => {
+    console.log(receivers);
     receivers.forEach((eachReceiver) => {
-      socket.to(eachReceiver).emit("ShareAddr", artsAddr, sender); //nickname 추가
+      socket.to(eachReceiver).emit("ShareAddr", sender); //nickname 추가
     });
   });
 
@@ -467,4 +468,3 @@ function joinGroup(groupName, socket, nickname) {
 }
 
 module.exports = app;
- 
