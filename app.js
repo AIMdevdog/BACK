@@ -21,18 +21,22 @@ const userRoomRouter = require("./routes/userRoom");
 
 const app = express();
 
-// const options = {
-//   key: fs.readFileSync(
-//     "/etc/letsencrypt/live/test-server.dev-team-aim.com/privkey.pem",
-//     "utf-8"
-//   ),
-//   cert: fs.readFileSync(
-//     "/etc/letsencrypt/live/test-server.dev-team-aim.com/fullchain.pem",
-//     "utf-8"
-//   ),
-// };
+const options = {
+  ca: fs.readFileSync(
+    "/etc/letsencrypt/live/test-server.dev-team-aim.com/fullchain.pem",
+    "utf-8"
+  ),
+  key: fs.readFileSync(
+    "/etc/letsencrypt/live/test-server.dev-team-aim.com/privkey.pem",
+    "utf-8"
+  ),
+  cert: fs.readFileSync(
+    "/etc/letsencrypt/live/test-server.dev-team-aim.com/cert.pem",
+    "utf-8"
+  ),
+};
 
-const httpsServer = https.createServer(app);
+const httpsServer = https.createServer(options, app);
 const PORT = 8000;
 const io = require("socket.io")(httpsServer, {
   cors: {
@@ -272,10 +276,6 @@ const createWorker = async () => {
   worker = await mediasoup.createWorker({
     rtcMinPort: 2000,
     rtcMaxPort: 2150, // connection 개수 150개까지 가능 (user수가 n일 때 connection 개수 = n^2)
-    dtlsCertificateFile:
-      "/etc/letsencrypt/live/test-server.dev-team-aim.com/fullchain.pem",
-    dtlsPrivateKeyFile:
-      "/etc/letsencrypt/live/test-server.dev-team-aim.com/privkey.pem",
   });
   console.log(`worker pid ${worker.pid}`);
 
@@ -651,12 +651,13 @@ io.on("connection", function (socket) {
         const webRtcTransport_options = {
           listenIps: [
             {
-              ip: "172.31.85.197", // replace with relevant IP address
-              announcedIp: "52.90.35.199", // replace with relevant IP address 여기에 aws IP주소 넣으면 됨*!!
-              // ip: "test-server.dev-team-aim.com", // replace with relevant IP address 여기에 aws IP주소 넣으면 됨*!!
-              // ip: "192.168.0.47", // replace with relevant IP address 여기에 aws IP주소 넣으면 됨*!!
-              // announcedIp: "127.0.0.1",
-              // announcedIp: "52.85.151.17",
+              ip: "0.0.0.0",
+              // announcedIp: "192.168.0.47",
+              announcedIp: "172.31.85.197",
+              //
+              // ip: "172.31.85.197", // replace with relevant IP address
+              // announcedIp: "52.90.35.199", // replace with relevant IP address 여기에 aws IP주소 넣으면 됨*!!
+              //
             },
           ],
           enableUdp: true,
