@@ -24,8 +24,8 @@ const config = require("./config");
 const app = express();
 
 const options = {
-  // key: fs.readFileSync(config.sslKey),
-  // cert: fs.readFileSync(config.sslCrt),
+  key: fs.readFileSync(config.sslKey),
+  cert: fs.readFileSync(config.sslCrt),
 };
 
 const httpsServer = https.createServer(options, app);
