@@ -635,8 +635,8 @@ io.on("connection", function (socket) {
         const webRtcTransport_options = {
           listenIps: [
             {
-              ip: "52.90.35.199", // replace with relevant IP address 여기에 aws IP주소 넣으면 됨*!!
-              // announcedIp: '127.0.0.1',
+              ip: "0.0.0.0", // replace with relevant IP address 여기에 aws IP주소 넣으면 됨*!!
+              announcedIp: "52.85.151.17",
             },
           ],
           enableUdp: true,
