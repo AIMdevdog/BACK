@@ -363,6 +363,11 @@ io.on("connection", function (socket) {
 */
 
   socket.on("user_call", async ({ caller, callee }) => {
+    try {
+
+    } catch (e) {
+      console.log(e)
+    }
     const user_caller = charMap[caller];
     const user_callee = charMap[callee];
     console.log("이것이 caller의 닉네임이다", user_caller.nickname);
@@ -388,7 +393,7 @@ io.on("connection", function (socket) {
             user_caller.groupName = guest_gN;
           } else {
             await removeUser(callee);
-            joinGroup(host_gN, user_callee.socket, user.caller.nickname);
+            joinGroup(host_gN, user_callee.socket, user.caller.nickname); //user정보를 못받아오는 버그
             user_callee.groupName = host_gN;
           }
         } else {
