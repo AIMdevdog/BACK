@@ -21,18 +21,18 @@ const userRoomRouter = require("./routes/userRoom");
 
 const app = express();
 
-const options = {
-  // key: fs.readFileSync(
-  //   "/etc/letsencrypt/live/test-server.dev-team-aim.com/privkey.pem",
-  //   "utf-8"
-  // ),
-  // cert: fs.readFileSync(
-  //   "/etc/letsencrypt/live/test-server.dev-team-aim.com/fullchain.pem",
-  //   "utf-8"
-  // ),
-};
+// const options = {
+//   key: fs.readFileSync(
+//     "/etc/letsencrypt/live/test-server.dev-team-aim.com/privkey.pem",
+//     "utf-8"
+//   ),
+//   cert: fs.readFileSync(
+//     "/etc/letsencrypt/live/test-server.dev-team-aim.com/fullchain.pem",
+//     "utf-8"
+//   ),
+// };
 
-const httpsServer = https.createServer(app, options);
+const httpsServer = https.createServer(app);
 const PORT = 8000;
 const io = require("socket.io")(httpsServer, {
   cors: {
@@ -272,6 +272,10 @@ const createWorker = async () => {
   worker = await mediasoup.createWorker({
     rtcMinPort: 2000,
     rtcMaxPort: 2150, // connection 개수 150개까지 가능 (user수가 n일 때 connection 개수 = n^2)
+    dtlsCertificateFile:
+      "/etc/letsencrypt/live/test-server.dev-team-aim.com/fullchain.pem",
+    dtlsPrivateKeyFile:
+      "/etc/letsencrypt/live/test-server.dev-team-aim.com/privkey.pem",
   });
   console.log(`worker pid ${worker.pid}`);
 
