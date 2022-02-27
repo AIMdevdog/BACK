@@ -19,18 +19,13 @@ const roomRouter = require("./routes/room");
 const characterRouter = require("./routes/characters");
 const userRoomRouter = require("./routes/userRoom");
 
+const config = require("./config");
+
 const app = express();
 
 const options = {
-  ca: fs.readFileSync(
-    "/etc/letsencrypt/live/test-server.dev-team-aim.com/fullchain.pem"
-  ),
-  key: fs.readFileSync(
-    "/etc/letsencrypt/live/test-server.dev-team-aim.com/privkey.pem"
-  ),
-  cert: fs.readFileSync(
-    "/etc/letsencrypt/live/test-server.dev-team-aim.com/cert.pem"
-  ),
+  key: fs.readFileSync(config.sslKey),
+  cert: fs.readFileSync(config.sslCrt),
 };
 
 const httpsServer = https.createServer(options, app);
@@ -271,8 +266,10 @@ broadcastState();
 // WebRTC SFU (mediasoup)
 const createWorker = async () => {
   worker = await mediasoup.createWorker({
-    rtcMinPort: 2000,
-    rtcMaxPort: 2150, // connection 개수 150개까지 가능 (user수가 n일 때 connection 개수 = n^2)
+    logLevel: config.mediasoup.worker.logLevel,
+    logTags: config.mediasoup.worker.logTags,
+    rtcMinPort: config.mediasoup.worker.rtcMinPort,
+    rtcMaxPort: config.mediasoup.worker.rtcMaxPort, // connection 개수 150개까지 가능 (user수가 n일 때 connection 개수 = n^2)
   });
   console.log(`worker pid ${worker.pid}`);
 
@@ -644,23 +641,26 @@ io.on("connection", function (socket) {
   const createWebRtcTransport = async (router) => {
     return new Promise(async (resolve, reject) => {
       try {
+        const { initialAvailableOutgoingBitrate } =
+          config.mediasoup.webRtcTransport;
         // https://mediasoup.org/documentation/v3/mediasoup/api/#WebRtcTransportOptions
         const webRtcTransport_options = {
-          listenIps: [
-            {
-              ip: "0.0.0.0",
-              // announcedIp: "192.168.0.47",
-              announcedIp: "172.31.85.197",
-              //
-              // ip: "172.31.85.197", // replace with relevant IP address
-              // announcedIp: "52.90.35.199", // replace with relevant IP address 여기에 aws IP주소 넣으면 됨*!!
-              //
-            },
-          ],
-          listenPort: 8000,
+          // listenIps: [
+          //   {
+          //     ip: "0.0.0.0",
+          //     // announcedIp: "192.168.0.47",
+          //     announcedIp: "172.31.85.197",
+          //     //
+          //     // ip: "172.31.85.197", // replace with relevant IP address
+          //     // announcedIp: "52.90.35.199", // replace with relevant IP address 여기에 aws IP주소 넣으면 됨*!!
+          //     //
+          //   },
+          // ],
+          listenIps: config.mediasoup.webRtcTransport.listenIps,
           enableUdp: true,
           enableTcp: true,
           preferUdp: true,
+          initialAvailableOutgoingBitrate,
         };
 
         // https://mediasoup.org/documentation/v3/mediasoup/api/#router-createWebRtcTransport
