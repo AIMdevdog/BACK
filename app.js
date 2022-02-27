@@ -22,14 +22,14 @@ const userRoomRouter = require("./routes/userRoom");
 const app = express();
 
 const options = {
-  key: fs.readFileSync(
-    "/etc/letsencrypt/live/test-server.dev-team-aim.com/privkey.pem",
-    "utf-8"
-  ),
-  cert: fs.readFileSync(
-    "/etc/letsencrypt/live/test-server.dev-team-aim.com/fullchain.pem",
-    "utf-8"
-  ),
+  // key: fs.readFileSync(
+  //   "/etc/letsencrypt/live/test-server.dev-team-aim.com/privkey.pem",
+  //   "utf-8"
+  // ),
+  // cert: fs.readFileSync(
+  //   "/etc/letsencrypt/live/test-server.dev-team-aim.com/fullchain.pem",
+  //   "utf-8"
+  // ),
 };
 
 const httpsServer = https.createServer(app, options);
