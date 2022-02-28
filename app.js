@@ -272,12 +272,14 @@ io.on("connection", function (socket) {
   console.log(`${socket.id} has joined!`);
   socket.on("disconnect", function (reason) {
     try {
-      console.log(`${socket.id} has leaved! (${reason})`);
+      console.log(`${socket.id} has leaved ${reason}!`);
+      const leaveUser = charMap[socket.id];
+      socket.to(leaveUser.roomId).emit("leave_user", {
+        id: socket.id,
+        nickname: leaveUser.nickname,
+      });
       removeUser(socket.id);
       leaveGame(socket);
-      socket.broadcast.emit("leave_user", {
-        id: socket.id,
-      });  
     } catch (e) {
       console.log(e)
     }
