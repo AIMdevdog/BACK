@@ -11,6 +11,7 @@ const getLocalIp = () => {
       }
       // Set the local ip to the first IPv4 address found and exit the loop
       localIp = iface.address;
+      console.log(localIp, "-----------------------------");
       return;
     }
   });
