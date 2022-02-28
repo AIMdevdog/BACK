@@ -21,8 +21,8 @@ const getLocalIp = () => {
 module.exports = {
   listenIp: "0.0.0.0",
   listenPort: 8000,
-  // sslCrt: "/etc/letsencrypt/live/test-server.dev-team-aim.com/fullchain.pem",
-  // sslKey: "/etc/letsencrypt/live/test-server.dev-team-aim.com/privkey.pem",
+  sslCrt: "/etc/letsencrypt/live/test-server.dev-team-aim.com/fullchain.pem",
+  sslKey: "/etc/letsencrypt/live/test-server.dev-team-aim.com/privkey.pem",
   // sslCrt: "../../../ssh/localhost+1.pem",
   // sslKey: "../../../ssh/localhost+1-key.pem",
 

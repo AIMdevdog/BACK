@@ -136,11 +136,11 @@ app.use(function (err, req, res, next) {
   res.render("error");
 });
 
-// httpsServer.listen(process.env.PORT || 8000, () => {
+// httpServer.listen(process.env.PORT || 8000, () => {
 //   console.log(`Server running on ${PORT}`);
 // });
 
-httpServer.listen(process.env.PORT || 8000, () => {
+httpsServer.listen(process.env.PORT || 8000, () => {
   console.log(`Server running on ${PORT}`);
 });
 
