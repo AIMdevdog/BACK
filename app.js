@@ -90,7 +90,7 @@ let roomObjArr = {
 };
 let groupObjArr = [
   // {
-  //   roomName,
+  //   groupName,
   //   currentNum,
   //   users: [
   //     {
@@ -492,6 +492,38 @@ io.on("connection", function (socket) {
       },
       (error) => {
         console.log(error);
+  socket.on("ArtsAddr", (sender, receivers) => {
+    console.log(receivers);
+    receivers.forEach((eachReceiver) => {
+      socket.to(eachReceiver).emit("ShareAddr", sender); //nickname 추가
+    });
+  });
+
+  socket.on("cursorPosition", (cursorX, cursorY, socketId) => {
+    socket.broadcast.emit("shareCursorPosition", cursorX, cursorY, socketId);
+  });
+
+  function removeUser(removeSid) {
+    let deleted = []; // player.id로 groupObjArr에서 roomName찾기
+    let findGroupName;
+    for (let i = 0; i < groupObjArr.length; i++) {
+      for (let j = 0; j < groupObjArr[i].users.length; j++) {
+        // 거리가 멀어질 player의 Sid로 화상통화 그룹 정보에 저장된 동일한 Sid를 찾아서 그룹에서 삭제해준다
+        if (removeSid === groupObjArr[i].users[j].socketId) {
+          findGroupName = groupObjArr[i].groupName;
+          // console.log('######', groupObjArr[i].users)
+          console.log("leave", groupObjArr[i].groupName);
+          console.log(typeof groupObjArr[i].groupName);
+          socket.leave(groupObjArr[i].groupName); //  socket Room 에서 삭제
+          console.log("socket에서 잘 삭제됐는지?", socket.rooms);
+          groupObjArr[i].users.splice(j, 1); // 우리가 따로 저장했던 배열에서도 삭제
+          console.log("*지웠나 체크 *", groupObjArr[i].users);
+          if (groupObjArr[i].users.length === 0) {
+            // for 빈 소켓 룸([]) 삭제 1
+            deleted.push(i);
+          }
+          break;
+        }
       }
     );
   });
