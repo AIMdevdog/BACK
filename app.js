@@ -469,6 +469,17 @@ io.on("connection", function (socket) {
     return router1;
   };
 
+  socket.on("ArtsAddr", (sender, receivers) => {
+    console.log(receivers);
+    receivers.forEach((eachReceiver) => {
+      socket.to(eachReceiver).emit("ShareAddr", sender); //nickname 추가
+    });
+  });
+
+  socket.on("cursorPosition", (cursorX, cursorY, socketId) => {
+    socket.broadcast.emit("shareCursorPosition", cursorX, cursorY, socketId);
+  });
+
   socket.on("createWebRtcTransport", async ({ consumer }, callback) => {
     try {
       // get Room Name from Peer's properties
@@ -492,21 +503,6 @@ io.on("connection", function (socket) {
         },
         (error) => {
           console.log(error);
-          socket.on("ArtsAddr", (sender, receivers) => {
-            console.log(receivers);
-            receivers.forEach((eachReceiver) => {
-              socket.to(eachReceiver).emit("ShareAddr", sender); //nickname 추가
-            });
-          });
-
-          socket.on("cursorPosition", (cursorX, cursorY, socketId) => {
-            socket.broadcast.emit(
-              "shareCursorPosition",
-              cursorX,
-              cursorY,
-              socketId
-            );
-          });
         }
       );
 
