@@ -22,22 +22,23 @@ const userRoomRouter = require("./routes/userRoom");
 const config = require("./config");
 
 const app = express();
-
-// const options = {
-//   key: fs.readFileSync(config.sslKey),
-//   cert: fs.readFileSync(config.sslCrt),
-// };
-
-// const httpsServer = https.createServer(options, app);
-const httpServer = http.createServer(app);
 const PORT = 8000;
-// const io = require("socket.io")(httpsServer, {
+
+const options = {
+  key: fs.readFileSync(config.sslKey),
+  cert: fs.readFileSync(config.sslCrt),
+};
+
+// const httpServer = http.createServer(app);
+// const io = require("socket.io")(httpServer, {
 //   cors: {
 //     origin: ["http://localhost:3000", "https://dev-team-aim.com"],
 //     credentials: true,
 //   },
 // });
-const io = require("socket.io")(httpServer, {
+
+const httpsServer = https.createServer(options, app);
+const io = require("socket.io")(httpsServer, {
   cors: {
     origin: ["http://localhost:3000", "https://dev-team-aim.com"],
     credentials: true,
@@ -356,7 +357,6 @@ io.on("connection", function (socket) {
 
   socket.on("user_call", async ({ caller, callee }) => {
     try {
-
       const user_caller = charMap[caller];
       const user_callee = charMap[callee];
 
@@ -500,10 +500,15 @@ io.on("connection", function (socket) {
         });
 
         socket.on("cursorPosition", (cursorX, cursorY, socketId) => {
-          socket.broadcast.emit("shareCursorPosition", cursorX, cursorY, socketId);
+          socket.broadcast.emit(
+            "shareCursorPosition",
+            cursorX,
+            cursorY,
+            socketId
+          );
         });
-
-      });
+      }
+    );
 
     const addTransport = (transport, roomName, consumer) => {
       transports = [
@@ -770,7 +775,6 @@ io.on("connection", function (socket) {
 
   function removeUser(removeSid) {
     try {
-
       let deleted = []; // player.id로 groupObjArr에서 roomName찾기
       let findGroupName;
       for (let i = 0; i < groupObjArr.length; i++) {
@@ -807,7 +811,9 @@ io.on("connection", function (socket) {
       // remove socket from room
       rooms[roomName] = {
         router: rooms[roomName].router,
-        peers: rooms[roomName].peers.filter((socketId) => socketId !== removeSid),
+        peers: rooms[roomName].peers.filter(
+          (socketId) => socketId !== removeSid
+        ),
       };
       // ^ WebRTC SFU (mediasoup) ^
 
@@ -815,9 +821,9 @@ io.on("connection", function (socket) {
       socket.to(findGroupName).emit("leave_succ", { removeSid });
       charMap[removeSid].groupNumber = 0;
     } catch (e) {
-      console.log('removeUser함수', e);
+      console.log("removeUser함수", e);
     }
-  };
+  }
 });
 
 const removeItems = (items, socketId, type) => {
@@ -830,11 +836,9 @@ const removeItems = (items, socketId, type) => {
     items = items.filter((item) => item.socketId !== socketId);
 
     return items;
-
   } catch (e) {
-    console.log('removeItem함수', e);
+    console.log("removeItem함수", e);
   }
-
 };
 
 //when caller make the room
@@ -857,7 +861,7 @@ function makeGroup(socket) {
     socket.emit("accept_join", initGroupObj.groupName);
     return groupName;
   } catch (e) {
-    console.log('makeGroup함수', e)
+    console.log("makeGroup함수", e);
   }
 }
 
@@ -866,7 +870,10 @@ function joinGroup(groupName, socket, nickname) {
   try {
     console.log("joinGroup");
     for (let i = 0; i < groupObjArr.length; ++i) {
-      console.log(`${i} 방 안에 있는 모든 유저의 소켓ID : `, groupObjArr[i].users);
+      console.log(
+        `${i} 방 안에 있는 모든 유저의 소켓ID : `,
+        groupObjArr[i].users
+      );
       if (groupObjArr[i].groupName === groupName) {
         // Reject join the room
         // if (groupObjArr[i].users.length >= MAXIMUM) {
@@ -884,9 +891,8 @@ function joinGroup(groupName, socket, nickname) {
       }
     }
   } catch (e) {
-    console.log('joinGroup함수', e);
+    console.log("joinGroup함수", e);
   }
 }
-
 
 module.exports = app;
