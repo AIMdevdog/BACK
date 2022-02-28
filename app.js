@@ -62,7 +62,7 @@ let charMap = {}; //character information (x,y 등등)
 /* for group call */
 const groupCallName = 0; //CallName for temp
 let groupName = 0;
-const MAXIMUM = 10; //Call maximum
+const MAXIMUM = 4; //Call maximum
 let roomObjArr = {
   // {
   //   roomName,
@@ -814,7 +814,7 @@ function makeGroup(socket) {
   groupObjArr.push(initGroupObj);
   socket.join(groupName);
   console.log("join:", groupName);
-  socket.emit("accept_join", initGroupObj.groupName); // [1] 배열 수정 필요
+  socket.emit("accept_join", initGroupObj.groupName); 
   return groupName;
 }
 //when callee join the room
@@ -829,7 +829,8 @@ function joinGroup(groupName, socket, nickname) {
       // Reject join the room
 
       if (groupObjArr[i].users.length >= MAXIMUM) {
-        socket.emit("reject_join");
+        // socket.emit("reject_join");
+        socket.emit("change_SFU", groupObjArr[i].groupName);
         return;
       }
       //Join the room
@@ -837,7 +838,7 @@ function joinGroup(groupName, socket, nickname) {
         socketId: socket.id,
         nickname,
       });
-      // ++groupObjArr[i].currentNum; 색제 예정
+      // ++groupObjArr[i].currentNum; 삭제 예정
 
       socket.join(groupName);
       socket.emit("accept_join", groupObjArr[i].groupName);
