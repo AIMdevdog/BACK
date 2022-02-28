@@ -296,13 +296,16 @@ const { mediaCodecs } = config.mediasoup.router;
 io.on("connection", function (socket) {
   console.log(`${socket.id} has joined!`);
   socket.on("disconnect", function (reason) {
+    const leaveUser = charMap[socket.id];
+    socket.to(leaveUser.roomId).emit("leave_user", {
+      id: socket.id,
+      nickname: leaveUser.nickname,
+    });
+
     if (peers[socket.id]) {
       removeUser(socket.id);
     }
     leaveGame(socket);
-    socket.broadcast.emit("leave_user", {
-      id: socket.id,
-    });
   });
 
   socket.on("input", function (data) {
