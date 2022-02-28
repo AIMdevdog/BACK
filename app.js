@@ -173,71 +173,96 @@ function handler(req, res) {
 }
 
 function makeGame(socket, roomId) {
-  console.log("makeGame func called");
-  let user = new GameObject(socket);
-  initGameObj = [];
-  initGameObj.push(user);
-  roomObjArr[roomId] = initGameObj;
-  return user;
+  try {
+    console.log("makeGame func called");
+    let user = new GameObject(socket);
+    initGameObj = [];
+    initGameObj.push(user);
+    roomObjArr[roomId] = initGameObj;
+    return user;
+  } catch (e) {
+    console.log(e)
+  }
 }
 
 function joinGame(socket, roomId) {
-  console.log("joinGame func called");
-  let user = new GameObject(socket);
-  roomObjArr[roomId].push(user);
-  return user;
+  try {
+    console.log("joinGame func called");
+    let user = new GameObject(socket);
+    roomObjArr[roomId].push(user);
+    return user;
+  } catch (e) {
+    console.log(e)
+  }
 }
 
 function leaveGame(socket) {
-  delete charMap[socket.id];
-  Object.values(roomObjArr).forEach((gameGroup) => {
-    for (let i = 0; i < gameGroup.length; i++) {
-      if (gameGroup[i].id === socket.id) {
-        const roomId = gameGroup[i].roomId;
-        gameGroup.splice(i, 1);
-        if (gameGroup.length === 0) {
-          delete roomObjArr[roomId];
+  try {
+    delete charMap[socket.id];
+    Object.values(roomObjArr).forEach((gameGroup) => {
+      for (let i = 0; i < gameGroup.length; i++) {
+        if (gameGroup[i].id === socket.id) {
+          const roomId = gameGroup[i].roomId;
+          gameGroup.splice(i, 1);
+          if (gameGroup.length === 0) {
+            delete roomObjArr[roomId];
+          }
+          return;
         }
-        return;
       }
-    }
-  });
+    });
+  } catch (e) {
+    console.log(e)
+  }
 }
 
 function onInput(socket, data) {
-  let user = charMap[data.id];
-  const inputData = {
-    x: data.x,
-    y: data.y,
-    direction: data.direction,
-    nickname: data.nickname,
-  };
-  user.pushInput(inputData);
+  try {
+    let user = charMap[data.id];
+    const inputData = {
+      x: data.x,
+      y: data.y,
+      direction: data.direction,
+      nickname: data.nickname,
+    };
+    user.pushInput(inputData);
+  
+  } catch (e) {
+    console.log(e)
+  }
 }
 
 function updateGame() {
-  Object.values(charMap).forEach((object) => {
-    object.update_location();
-  });
-  setTimeout(updateGame, 16);
+  try {
+    Object.values(charMap).forEach((object) => {
+      object.update_location();
+    });
+    setTimeout(updateGame, 16);  
+  } catch (e) {
+    console.log(e)
+  }
 }
 
 function broadcastState() {
-  Object.values(roomObjArr).forEach((gameGroup) => {
-    let data = {};
-    for (let i = 0; i < gameGroup.length; i++) {
-      let character = gameGroup[i];
-      data[i] = {
-        id: character.id,
-        x: character.x,
-        y: character.y,
-        direction: character.direction.shift(),
-      };
-    }
-    io.sockets.in(gameGroup[0].roomId).emit("update_state", data);
-  });
+  try {
+    Object.values(roomObjArr).forEach((gameGroup) => {
+      let data = {};
+      for (let i = 0; i < gameGroup.length; i++) {
+        let character = gameGroup[i];
+        data[i] = {
+          id: character.id,
+          x: character.x,
+          y: character.y,
+          direction: character.direction.shift(),
+        };
+      }
+      io.sockets.in(gameGroup[0].roomId).emit("update_state", data);
+    });
+  
+    setTimeout(broadcastState, 16);  
+  } catch (e) {
 
-  setTimeout(broadcastState, 16);
+  }
 }
 
 updateGame();
@@ -246,12 +271,16 @@ broadcastState();
 io.on("connection", function (socket) {
   console.log(`${socket.id} has joined!`);
   socket.on("disconnect", function (reason) {
-    console.log(`${socket.id} has leaved! (${reason})`);
-    removeUser(socket.id);
-    leaveGame(socket);
-    socket.broadcast.emit("leave_user", {
-      id: socket.id,
-    });
+    try {
+      console.log(`${socket.id} has leaved! (${reason})`);
+      removeUser(socket.id);
+      leaveGame(socket);
+      socket.broadcast.emit("leave_user", {
+        id: socket.id,
+      });  
+    } catch (e) {
+      console.log(e)
+    }
   });
 
   socket.on("input", function (data) {
@@ -260,44 +289,48 @@ io.on("connection", function (socket) {
   socket.emit("join_user");
 
   socket.on("send_user_info", function (data) {
-    const { src, x, y, nickname, roomId } = data;
-    socket.join(roomId);
-    let newUser;
-    if (roomObjArr[roomId]) {
-      newUser = joinGame(socket, roomId);
-      newUser.x = x;
-      newUser.y = y;
-      newUser.src = src;
-      newUser.nickname = nickname;
-      newUser.roomId = roomId;
-    } else {
-      newUser = makeGame(socket, roomId);
-      newUser.x = x;
-      newUser.y = y;
-      newUser.src = src;
-      newUser.nickname = nickname;
-      newUser.roomId = roomId;
+    try {
+      const { src, x, y, nickname, roomId } = data;
+      socket.join(roomId);
+      let newUser;
+      if (roomObjArr[roomId]) {
+        newUser = joinGame(socket, roomId);
+        newUser.x = x;
+        newUser.y = y;
+        newUser.src = src;
+        newUser.nickname = nickname;
+        newUser.roomId = roomId;
+      } else {
+        newUser = makeGame(socket, roomId);
+        newUser.x = x;
+        newUser.y = y;
+        newUser.src = src;
+        newUser.nickname = nickname;
+        newUser.roomId = roomId;
+      }
+  
+      charMap[socket.id] = newUser;
+      const gameGroup = roomObjArr[roomId];
+      for (let i = 0; i < gameGroup.length; i++) {
+        let user = gameGroup[i];
+        socket.emit("get_user_info", {
+          id: user.socket.id,
+          x: user.x,
+          y: user.y,
+          src: user.src,
+          nickname: user.nickname,
+        });
+      }
+      socket.to(roomId).emit("get_user_info", {
+        id: socket.id,
+        x: newUser.x,
+        y: newUser.y,
+        src: newUser.src,
+        nickname: newUser.nickname,
+      });  
+    } catch (e) {
+      console.log(e)
     }
-
-    charMap[socket.id] = newUser;
-    const gameGroup = roomObjArr[roomId];
-    for (let i = 0; i < gameGroup.length; i++) {
-      let user = gameGroup[i];
-      socket.emit("get_user_info", {
-        id: user.socket.id,
-        x: user.x,
-        y: user.y,
-        src: user.src,
-        nickname: user.nickname,
-      });
-    }
-    socket.to(roomId).emit("get_user_info", {
-      id: socket.id,
-      x: newUser.x,
-      y: newUser.y,
-      src: newUser.src,
-      nickname: newUser.nickname,
-    });
   });
 
   /*
@@ -308,45 +341,49 @@ io.on("connection", function (socket) {
 */
 
   socket.on("user_call", async ({ caller, callee }) => {
-    const user_caller = charMap[caller];
-    const user_callee = charMap[callee];
-    console.log("이것이 caller의 닉네임이다", user_caller.nickname);
-
-    let guest_gN = user_callee.groupNumber;
-    let host_gN = user_caller.groupNumber;
-
-    console.log(guest_gN, host_gN);
-
-    if (guest_gN) {
-      // 둘 중 한 명 Group 있을 때
-      if (!host_gN) {
-        await joinGroup(guest_gN, user_caller.socket, user_callee.nickname);
-        user_caller.groupNumber = guest_gN;
-        console.log(user_caller.groupNumber, user_callee.groupNumber);
-      } else {
-        //guest_gN과 host_gN이 다를 경우를 추가
-        if (guest_gN != host_gN) {
-          console.log("host, guest의 그룹 번호가 다릅니다.");
-          if (guest_gN > host_gN) {
-            await removeUser(caller);
-            joinGroup(guest_gN, user_caller.socket, user_callee.nickname);
-            user_caller.groupName = guest_gN;
-          } else {
-            await removeUser(callee);
-            joinGroup(host_gN, user_callee.socket, user.caller.nickname);
-            user_callee.groupName = host_gN;
-          }
+    try {
+      const user_caller = charMap[caller];
+      const user_callee = charMap[callee];
+      console.log("이것이 caller의 닉네임이다", user_caller.nickname);
+  
+      let guest_gN = user_callee.groupNumber;
+      let host_gN = user_caller.groupNumber;
+  
+      console.log(guest_gN, host_gN);
+  
+      if (guest_gN) {
+        // 둘 중 한 명 Group 있을 때
+        if (!host_gN) {
+          await joinGroup(guest_gN, user_caller.socket, user_callee.nickname);
+          user_caller.groupNumber = guest_gN;
+          console.log(user_caller.groupNumber, user_callee.groupNumber);
         } else {
-          console.log("host, guest의 그룹 번호가 같습니다.");
+          //guest_gN과 host_gN이 다를 경우를 추가
+          if (guest_gN != host_gN) {
+            console.log("host, guest의 그룹 번호가 다릅니다.");
+            if (guest_gN > host_gN) {
+              await removeUser(caller);
+              joinGroup(guest_gN, user_caller.socket, user_callee.nickname);
+              user_caller.groupName = guest_gN;
+            } else {
+              await removeUser(callee);
+              joinGroup(host_gN, user_callee.socket, user.caller.nickname);
+              user_callee.groupName = host_gN;
+            }
+          } else {
+            console.log("host, guest의 그룹 번호가 같습니다.");
+          }
         }
+      } else if (!host_gN) {
+        // 둘 다 Group 없을 때 (guest X && host X)
+        user_caller.groupNumber = await makeGroup(user_caller.socket);
+        console.log("Caller가 만든 그룹 번호 :", user_caller.groupNumber);
+      } else {
+        // guest X && host O
+        console.log("else일 때 host_gN: ", host_gN, "guest_gN: ", guest_gN);
       }
-    } else if (!host_gN) {
-      // 둘 다 Group 없을 때 (guest X && host X)
-      user_caller.groupNumber = await makeGroup(user_caller.socket);
-      console.log("Caller가 만든 그룹 번호 :", user_caller.groupNumber);
-    } else {
-      // guest X && host O
-      console.log("else일 때 host_gN: ", host_gN, "guest_gN: ", guest_gN);
+    } catch (e) {
+      console.log(e)
     }
   });
 
@@ -380,37 +417,41 @@ io.on("connection", function (socket) {
   });
 
   function removeUser(removeSid) {
-    let deleted = []; // player.id로 groupObjArr에서 roomName찾기
-    let findGroupName;
-    for (let i = 0; i < groupObjArr.length; i++) {
-      for (let j = 0; j < groupObjArr[i].users.length; j++) {
-        // 거리가 멀어질 player의 Sid로 화상통화 그룹 정보에 저장된 동일한 Sid를 찾아서 그룹에서 삭제해준다
-        if (removeSid === groupObjArr[i].users[j].socketId) {
-          findGroupName = groupObjArr[i].groupName;
-          // console.log('######', groupObjArr[i].users)
-          console.log("leave", groupObjArr[i].groupName);
-          console.log(typeof groupObjArr[i].groupName);
-          socket.leave(groupObjArr[i].groupName); //  socket Room 에서 삭제
-          console.log("socket에서 잘 삭제됐는지?", socket.rooms);
-          groupObjArr[i].users.splice(j, 1); // 우리가 따로 저장했던 배열에서도 삭제
-          console.log("*지웠나 체크 *", groupObjArr[i].users);
-          if (groupObjArr[i].users.length === 0) {
-            // for 빈 소켓 룸([]) 삭제 1
-            deleted.push(i);
+    try {
+      let deleted = []; // player.id로 groupObjArr에서 roomName찾기
+      let findGroupName;
+      for (let i = 0; i < groupObjArr.length; i++) {
+        for (let j = 0; j < groupObjArr[i].users.length; j++) {
+          // 거리가 멀어질 player의 Sid로 화상통화 그룹 정보에 저장된 동일한 Sid를 찾아서 그룹에서 삭제해준다
+          if (removeSid === groupObjArr[i].users[j].socketId) {
+            findGroupName = groupObjArr[i].groupName;
+            // console.log('######', groupObjArr[i].users)
+            console.log("leave", groupObjArr[i].groupName);
+            console.log(typeof groupObjArr[i].groupName);
+            socket.leave(groupObjArr[i].groupName); //  socket Room 에서 삭제
+            console.log("socket에서 잘 삭제됐는지?", socket.rooms);
+            groupObjArr[i].users.splice(j, 1); // 우리가 따로 저장했던 배열에서도 삭제
+            console.log("*지웠나 체크 *", groupObjArr[i].users);
+            if (groupObjArr[i].users.length === 0) {
+              // for 빈 소켓 룸([]) 삭제 1
+              deleted.push(i);
+            }
+            break;
           }
-          break;
         }
       }
+      for (let i = 0; i < deleted.length; i++) {
+        // for 빈 소켓 룸([]) 삭제 2
+        groupObjArr.splice(deleted[i], 1);
+      }
+      console.log("____________leave_group____________");
+      socket.to(findGroupName).emit("leave_succ", {
+        removeSid,
+      });
+      charMap[removeSid].groupNumber = 0;
+    } catch (e) {
+      console.log(e)
     }
-    for (let i = 0; i < deleted.length; i++) {
-      // for 빈 소켓 룸([]) 삭제 2
-      groupObjArr.splice(deleted[i], 1);
-    }
-    console.log("____________leave_group____________");
-    socket.to(findGroupName).emit("leave_succ", {
-      removeSid,
-    });
-    charMap[removeSid].groupNumber = 0;
   }
 
   socket.on("leave_Group", (removeSid) => {
@@ -422,48 +463,56 @@ io.on("connection", function (socket) {
 
 //when caller make the room
 function makeGroup(socket) {
-  console.log("makeGroup");
-  initGroupObj = {
-    groupName: ++groupName,
-    currentNum: 0,
-    users: [
-      {
-        socketId: socket.id,
-        // nickname,
-      },
-    ],
-  };
-  groupObjArr.push(initGroupObj);
-  socket.join(groupName);
-  console.log("join:", groupName);
-  socket.emit("accept_join", [1]);
-  return groupName;
+  try {
+    console.log("makeGroup");
+    initGroupObj = {
+      groupName: ++groupName,
+      currentNum: 0,
+      users: [
+        {
+          socketId: socket.id,
+          // nickname,
+        },
+      ],
+    };
+    groupObjArr.push(initGroupObj);
+    socket.join(groupName);
+    console.log("join:", groupName);
+    socket.emit("accept_join", [1]);
+    return groupName;  
+  } catch (e) {
+    console.log(e)
+  }
 }
 //when callee join the room
 function joinGroup(groupName, socket, nickname) {
-  console.log("joinGroup");
-  for (let i = 0; i < groupObjArr.length; ++i) {
-    console.log(
-      `${i} 방 안에 있는 모든 유저의 소켓ID : `,
-      groupObjArr[i].users
-    );
-    if (groupObjArr[i].groupName === groupName) {
-      // Reject join the room
-
-      if (groupObjArr[i].users.length >= MAXIMUM) {
-        socket.emit("reject_join");
-        return;
+  try {
+    console.log("joinGroup");
+    for (let i = 0; i < groupObjArr.length; ++i) {
+      console.log(
+        `${i} 방 안에 있는 모든 유저의 소켓ID : `,
+        groupObjArr[i].users
+      );
+      if (groupObjArr[i].groupName === groupName) {
+        // Reject join the room
+  
+        if (groupObjArr[i].users.length >= MAXIMUM) {
+          socket.emit("reject_join");
+          return;
+        }
+        //Join the room
+        groupObjArr[i].users.push({
+          socketId: socket.id,
+          nickname,
+        });
+        // ++groupObjArr[i].currentNum; 색제 예정
+  
+        socket.join(groupName);
+        socket.emit("accept_join", groupObjArr[i].users);
       }
-      //Join the room
-      groupObjArr[i].users.push({
-        socketId: socket.id,
-        nickname,
-      });
-      // ++groupObjArr[i].currentNum; 색제 예정
-
-      socket.join(groupName);
-      socket.emit("accept_join", groupObjArr[i].users);
     }
+  } catch (e) {
+    console.log(e)
   }
 }
 
