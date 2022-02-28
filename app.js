@@ -23,20 +23,26 @@ const config = require("./config");
 
 const app = express();
 
-const options = {
-  key: fs.readFileSync(config.sslKey),
-  cert: fs.readFileSync(config.sslCrt),
-};
+// const options = {
+//   key: fs.readFileSync(config.sslKey),
+//   cert: fs.readFileSync(config.sslCrt),
+// };
 
-const httpsServer = https.createServer(options, app);
+// const httpsServer = https.createServer(options, app);
+const httpServer = http.createServer(app);
 const PORT = 8000;
-const io = require("socket.io")(httpsServer, {
+// const io = require("socket.io")(httpsServer, {
+//   cors: {
+//     origin: ["http://localhost:3000", "https://dev-team-aim.com"],
+//     credentials: true,
+//   },
+// });
+const io = require("socket.io")(httpServer, {
   cors: {
     origin: ["http://localhost:3000", "https://dev-team-aim.com"],
     credentials: true,
   },
 });
-// const io = server.of('/mediasoup');
 
 // WebRTC SFU (mediasoup)
 let worker;
@@ -68,7 +74,6 @@ let corsOption = {
 let charMap = {}; //character information (x,y 등등)
 
 /* for group call */
-const groupCallName = 0; //CallName for temp
 let groupName = 0;
 const MAXIMUM = 10; //Call maximum
 let roomObjArr = {
@@ -100,8 +105,8 @@ app.use(cors(corsOption));
 app.use(express.static("public"));
 
 // view engine setup
-app.set("views", path.join(__dirname, "views"));
-app.set("view engine", "jade");
+// app.set("views", path.join(__dirname, "views"));
+// app.set("view engine", "jade");
 
 app.use(logger("dev"));
 app.use(express.json());
@@ -130,12 +135,14 @@ app.use(function (err, req, res, next) {
   res.render("error");
 });
 
-httpsServer.listen(process.env.PORT || 8000, () => {
+// httpsServer.listen(process.env.PORT || 8000, () => {
+//   console.log(`Server running on ${PORT}`);
+// });
+
+httpServer.listen(process.env.PORT || 8000, () => {
   console.log(`Server running on ${PORT}`);
 });
 
-const video_call_stack = [];
-let roomNum = 0;
 class GameObject {
   constructor(socket) {
     this.socket = socket;
@@ -282,19 +289,13 @@ const createWorker = async () => {
   return worker;
 };
 
-// We create a Worker as soon as our application starts
 worker = createWorker();
 
-// This is an Array of RtpCapabilities
-// https://mediasoup.org/documentation/v3/mediasoup/rtp-parameters-and-capabilities/#RtpCodecCapability
-// list of media codecs supported by mediasoup ...
-// https://github.com/versatica/mediasoup/blob/v3/src/supportedRtpCapabilities.ts
 const { mediaCodecs } = config.mediasoup.router;
 
 io.on("connection", function (socket) {
   console.log(`${socket.id} has joined!`);
   socket.on("disconnect", function (reason) {
-    // console.log(`${socket.id} has leaved! (${reason})`);
     if (peers[socket.id]) {
       removeUser(socket.id);
     }
@@ -350,60 +351,57 @@ io.on("connection", function (socket) {
     });
   });
 
-  /*
-  1. 방원 -> 서버 -> 방장 (offer)
-  2. 방장 -> 서버 -> 방원 (answer)
-  3. 방원 -> 서버 -> 방장 (add ice)
-  4. 방장 -> 서버 -> 방원 (add ice) 
-*/
-
   socket.on("user_call", async ({ caller, callee }) => {
-    const user_caller = charMap[caller];
-    const user_callee = charMap[callee];
-    console.log("이것이 caller의 닉네임이다", user_caller.nickname);
+    try {
 
-    let guest_gN = user_callee.groupNumber;
-    let host_gN = user_caller.groupNumber;
-
-    console.log(guest_gN, host_gN);
-
-    if (guest_gN) {
-      // 둘 중 한 명 Group 있을 때
-      if (!host_gN) {
-        await joinGroup(guest_gN, user_caller.socket, user_callee.nickname);
-        user_caller.groupNumber = guest_gN;
-        console.log(user_caller.groupNumber, user_callee.groupNumber);
-      } else {
-        //guest_gN과 host_gN이 다를 경우를 추가
-        if (guest_gN != host_gN) {
-          console.log("host, guest의 그룹 번호가 다릅니다.");
-          if (guest_gN > host_gN) {
-            await removeUser(caller);
-            joinGroup(guest_gN, user_caller.socket, user_callee.nickname);
-            user_caller.groupName = guest_gN;
-          } else {
-            await removeUser(callee);
-            joinGroup(host_gN, user_callee.socket, user.caller.nickname);
-            user_callee.groupName = host_gN;
-          }
+      const user_caller = charMap[caller];
+      const user_callee = charMap[callee];
+      
+      let guest_gN = user_callee.groupNumber;
+      let host_gN = user_caller.groupNumber;
+      
+      console.log(guest_gN, host_gN);
+      
+      if (guest_gN) {
+        // 둘 중 한 명 Group 있을 때
+        if (!host_gN) {
+          await joinGroup(guest_gN, user_caller.socket, user_callee.nickname);
+          user_caller.groupNumber = guest_gN;
+          console.log(user_caller.groupNumber, user_callee.groupNumber);
         } else {
-          console.log("host, guest의 그룹 번호가 같습니다.");
+          //guest_gN과 host_gN이 다를 경우를 추가
+          if (guest_gN != host_gN) {
+            console.log("host, guest은 다른 그룹입니다.");
+            if (guest_gN > host_gN) {
+              await removeUser(caller);
+              joinGroup(guest_gN, user_caller.socket, user_callee.nickname);
+              user_caller.groupName = guest_gN;
+            } else {
+              await removeUser(callee);
+              joinGroup(host_gN, user_callee.socket, user.caller.nickname);
+              user_callee.groupName = host_gN;
+            }
+          } else {
+            console.log("이미 그룹이 생성되었습니다.");
+          }
         }
+      } else if (!host_gN) {
+        // 둘 다 Group 없을 때 (guest X && host X)
+        user_caller.groupNumber = await makeGroup(user_caller.socket);
+        console.log("Caller가 만든 그룹 번호 :", user_caller.groupNumber);
+      } else {
+        // guest X && host O
+        console.log("else일 때 host_gN: ", host_gN, "guest_gN: ", guest_gN);
       }
-    } else if (!host_gN) {
-      // 둘 다 Group 없을 때 (guest X && host X)
-      user_caller.groupNumber = await makeGroup(user_caller.socket);
-      console.log("Caller가 만든 그룹 번호 :", user_caller.groupNumber);
-    } else {
-      // guest X && host O
-      console.log("else일 때 host_gN: ", host_gN, "guest_gN: ", guest_gN);
+    } catch(e) {
+      console.log("user_call함수", e);
     }
   });
-
+    
   socket.on("offer", (offer, remoteSocketId, localNickname) => {
     socket.to(remoteSocketId).emit("offer", offer, socket.id, localNickname);
   });
-
+    
   socket.on("answer", (answer, remoteSocketId) => {
     socket.to(remoteSocketId).emit("answer", answer, socket.id);
   });
@@ -421,7 +419,6 @@ io.on("connection", function (socket) {
   // WebRTC SFU (mediasoup)           // roomName <== groupName(int)
   socket.on("getRtpCapabilities", async (roomName, callback) => {
     const router1 = await createRoom(roomName, socket.id);
-    // console.log('~~~Router1 생성 완료다냥~~~');
     peers[socket.id] = {
       socket,
       roomName, // Name for the Router this Peer joined
@@ -746,138 +743,137 @@ io.on("connection", function (socket) {
   );
 
   socket.on("consumer-resume", async ({ serverConsumerId }) => {
-    // console.log('consumer resume')
     const { consumer } = consumers.find(
       (consumerData) => consumerData.consumer.id === serverConsumerId
     );
     await consumer.resume();
   });
 
-  // ------------------------ ^ SFU
-
-  function removeUser(removeSid) {
-    let deleted = []; // player.id로 groupObjArr에서 roomName찾기
-    let findGroupName;
-    for (let i = 0; i < groupObjArr.length; i++) {
-      for (let j = 0; j < groupObjArr[i].users.length; j++) {
-        // 거리가 멀어질 player의 Sid로 화상통화 그룹 정보에 저장된 동일한 Sid를 찾아서 그룹에서 삭제해준다
-        if (removeSid === groupObjArr[i].users[j].socketId) {
-          findGroupName = groupObjArr[i].groupName;
-          // console.log('######', groupObjArr[i].users)
-          // console.log("leave", groupObjArr[i].groupName);
-          // console.log(typeof groupObjArr[i].groupName);
-          socket.leave(groupObjArr[i].groupName); //  socket Room 에서 삭제
-          // console.log("socket에서 잘 삭제됐는지?", socket.rooms);
-          groupObjArr[i].users.splice(j, 1); // 우리가 따로 저장했던 배열에서도 삭제
-          // console.log("*지웠나 체크*", groupObjArr[i].users);
-          if (groupObjArr[i].users.length === 0) {
-            // for 빈 소켓 룸([]) 삭제 1
-            deleted.push(i);
-          }
-          break;
-        }
-      }
-    }
-    for (let i = 0; i < deleted.length; i++) {
-      // for 빈 소켓 룸([]) 삭제 2
-      groupObjArr.splice(deleted[i], 1);
-    }
-
-    // WebRTC SFU (mediasoup)
-    // do some cleanup
-    // console.log('peer disconnected')
-    consumers = removeItems(consumers, removeSid, "consumer");
-    producers = removeItems(producers, removeSid, "producer");
-    transports = removeItems(transports, removeSid, "transport");
-
-    const roomName = peers[removeSid].roomName;
-    // console.log("***************", removeSid)
-    // console.log("***************", peers[removeSid])
-    delete peers[removeSid];
-
-    // remove socket from room
-    rooms[roomName] = {
-      router: rooms[roomName].router,
-      peers: rooms[roomName].peers.filter((socketId) => socketId !== removeSid),
-    };
-    // ^ WebRTC SFU (mediasoup) ^
-
-    console.log("____________leave_group____________");
-    socket.to(findGroupName).emit("leave_succ", {
-      removeSid,
-    });
-    charMap[removeSid].groupNumber = 0;
-
-    // socket.on("leave_Group", (removeSid) => {
-    //   console.log("________ㅠㅠ 멀어졌다..____________ sid = ", removeSid);
-    //   // 그룹 넘버 초기화
-    //   removeUser(removeSid);
-    // });
-  }
-
   socket.on("leave_Group", (removeSid) => {
     console.log("________ㅠㅠ 멀어졌다..____________ sid = ", removeSid);
     // 그룹 넘버 초기화
     removeUser(removeSid);
   });
+
+  function removeUser(removeSid) {
+    try {
+
+      let deleted = []; // player.id로 groupObjArr에서 roomName찾기
+      let findGroupName;
+      for (let i = 0; i < groupObjArr.length; i++) {
+        for (let j = 0; j < groupObjArr[i].users.length; j++) {
+          // 거리가 멀어질 player의 Sid로 화상통화 그룹 정보에 저장된 동일한 Sid를 찾아서 그룹에서 삭제해준다
+          if (removeSid === groupObjArr[i].users[j].socketId) {
+            findGroupName = groupObjArr[i].groupName;
+            socket.leave(groupObjArr[i].groupName); //  socket Room 에서 삭제
+            // console.log("socket에서 잘 삭제됐는지?", socket.rooms);
+            groupObjArr[i].users.splice(j, 1); // 우리가 따로 저장했던 배열에서도 삭제
+            // console.log("*지웠나 체크*", groupObjArr[i].users);
+            if (groupObjArr[i].users.length === 0) {
+              // for 빈 소켓 룸([]) 삭제 1
+              deleted.push(i);
+            }
+            break;
+          }
+        }
+      }
+      for (let i = 0; i < deleted.length; i++) {
+        // for 빈 소켓 룸([]) 삭제 2
+        groupObjArr.splice(deleted[i], 1);
+      }
+      
+      // WebRTC SFU (mediasoup)
+      // do some cleanup
+      consumers = removeItems(consumers, removeSid, "consumer");
+      producers = removeItems(producers, removeSid, "producer");
+      transports = removeItems(transports, removeSid, "transport");
+      
+      const roomName = peers[removeSid].roomName;
+      delete peers[removeSid];
+      
+      // remove socket from room
+      rooms[roomName] = {
+        router: rooms[roomName].router,
+        peers: rooms[roomName].peers.filter((socketId) => socketId !== removeSid),
+      };
+      // ^ WebRTC SFU (mediasoup) ^
+      
+      console.log("____________leave_group____________");
+      socket.to(findGroupName).emit("leave_succ", {removeSid});
+      charMap[removeSid].groupNumber = 0;
+    } catch(e) {
+      console.log('removeUser함수', e);
+    }
+  };
 });
 
 const removeItems = (items, socketId, type) => {
-  items.forEach((item) => {
-    if (item.socketId === socketId) {
-      item[type].close();
-    }
-  });
-  items = items.filter((item) => item.socketId !== socketId);
+  try {
+    items.forEach((item) => {
+      if (item.socketId === socketId) {
+        item[type].close();
+      }
+    });
+    items = items.filter((item) => item.socketId !== socketId);
+  
+    return items;
 
-  return items;
+  } catch(e) {
+    console.log('removeItem함수', e);
+  }
+
 };
 
 //when caller make the room
 function makeGroup(socket) {
-  console.log("makeGroup");
-  initGroupObj = {
-    groupName: ++groupName,
-    currentNum: 0,
-    users: [
-      {
-        socketId: socket.id,
-        // nickname,
-      },
-    ],
-  };
-  groupObjArr.push(initGroupObj);
-  socket.join(groupName);
-  console.log("join:", groupName);
-  socket.emit("accept_join", initGroupObj.groupName); // [1] 배열 수정 필요
-  return groupName;
-}
-//when callee join the room
-function joinGroup(groupName, socket, nickname) {
-  console.log("joinGroup");
-  for (let i = 0; i < groupObjArr.length; ++i) {
-    console.log(
-      `${i} 방 안에 있는 모든 유저의 소켓ID : `,
-      groupObjArr[i].users
-    );
-    if (groupObjArr[i].groupName === groupName) {
-      // Reject join the room
-
-      if (groupObjArr[i].users.length >= MAXIMUM) {
-        socket.emit("reject_join");
-        return;
-      }
-      //Join the room
-      groupObjArr[i].users.push({
-        socketId: socket.id,
-        nickname,
-      });
-      // ++groupObjArr[i].currentNum; 색제 예정
-
-      socket.join(groupName);
-      socket.emit("accept_join", groupObjArr[i].groupName);
-    }
+  try {
+    console.log("makeGroup");
+    initGroupObj = {
+      groupName: ++groupName,
+      currentNum: 0,
+      users: [
+        {
+          socketId: socket.id,
+          // nickname,
+        },
+      ],
+    };
+    groupObjArr.push(initGroupObj);
+    socket.join(groupName);
+    console.log("join:", groupName);
+    socket.emit("accept_join", initGroupObj.groupName);
+    return groupName;
+  } catch (e) {
+    console.log('makeGroup함수', e)
   }
 }
+
+//when callee join the room
+function joinGroup(groupName, socket, nickname) {
+  try {
+    console.log("joinGroup");
+    for (let i = 0; i < groupObjArr.length; ++i) {
+      console.log(`${i} 방 안에 있는 모든 유저의 소켓ID : `,groupObjArr[i].users);
+      if (groupObjArr[i].groupName === groupName) {
+        // Reject join the room
+        // if (groupObjArr[i].users.length >= MAXIMUM) {
+        //   socket.emit("reject_join");
+        //   return;
+        // }
+        //Join the room
+        groupObjArr[i].users.push({
+          socketId: socket.id,
+          nickname,
+        });
+  
+        socket.join(groupName);
+        socket.emit("accept_join", groupObjArr[i].groupName);
+      }
+    }
+  } catch(e) {
+    console.log('joinGroup함수',e);
+  }
+}
+
 
 module.exports = app;
