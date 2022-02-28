@@ -517,5 +517,4 @@ function joinGroup(groupName, socket, nickname) {
     console.log(e)
   }
 }
-
 module.exports = app;
