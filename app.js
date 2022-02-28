@@ -470,57 +470,60 @@ io.on("connection", function (socket) {
   };
 
   socket.on("createWebRtcTransport", async ({ consumer }, callback) => {
-    // get Room Name from Peer's properties
-    const roomName = peers[socket.id].roomName;
+    try {
+      // get Room Name from Peer's properties
+      const roomName = peers[socket.id].roomName;
+      // get Router (Room) object this peer is in based on RoomName
+      const router = rooms[roomName].router;
 
-    // get Router (Room) object this peer is in based on RoomName
-    const router = rooms[roomName].router;
-
-    createWebRtcTransport(router).then(
-      (transport) => {
-        callback({
-          params: {
-            id: transport.id,
-            iceParameters: transport.iceParameters,
-            iceCandidates: transport.iceCandidates,
-            dtlsParameters: transport.dtlsParameters,
-          },
-        });
-
-        // add transport to Peer's properties
-        addTransport(transport, roomName, consumer);
-      },
-      (error) => {
-        console.log(error);
-        socket.on("ArtsAddr", (sender, receivers) => {
-          console.log(receivers);
-          receivers.forEach((eachReceiver) => {
-            socket.to(eachReceiver).emit("ShareAddr", sender); //nickname 추가
+      createWebRtcTransport(router).then(
+        (transport) => {
+          callback({
+            params: {
+              id: transport.id,
+              iceParameters: transport.iceParameters,
+              iceCandidates: transport.iceCandidates,
+              dtlsParameters: transport.dtlsParameters,
+            },
           });
-        });
 
-        socket.on("cursorPosition", (cursorX, cursorY, socketId) => {
-          socket.broadcast.emit(
-            "shareCursorPosition",
-            cursorX,
-            cursorY,
-            socketId
-          );
-        });
-      }
-    );
+          // add transport to Peer's properties
+          addTransport(transport, roomName, consumer);
+        },
+        (error) => {
+          console.log(error);
+          socket.on("ArtsAddr", (sender, receivers) => {
+            console.log(receivers);
+            receivers.forEach((eachReceiver) => {
+              socket.to(eachReceiver).emit("ShareAddr", sender); //nickname 추가
+            });
+          });
 
-    const addTransport = (transport, roomName, consumer) => {
-      transports = [
-        ...transports,
-        { socketId: socket.id, transport, roomName, consumer },
-      ];
+          socket.on("cursorPosition", (cursorX, cursorY, socketId) => {
+            socket.broadcast.emit(
+              "shareCursorPosition",
+              cursorX,
+              cursorY,
+              socketId
+            );
+          });
+        }
+      );
 
-      peers[socket.id] = {
-        ...peers[socket.id],
-        transports: [...peers[socket.id].transports, transport.id],
+      const addTransport = (transport, roomName, consumer) => {
+        transports = [
+          ...transports,
+          { socketId: socket.id, transport, roomName, consumer },
+        ];
+
+        peers[socket.id] = {
+          ...peers[socket.id],
+          transports: [...peers[socket.id].transports, transport.id],
+        };
       };
-    };
+    } catch (e) {
+      console.log("createWebRtcTransport <<<<< 에러", e);
+    }
   });
 
   // see client's socket.emit('transport-connect', ...)
