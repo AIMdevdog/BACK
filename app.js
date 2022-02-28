@@ -359,12 +359,12 @@ io.on("connection", function (socket) {
 
       const user_caller = charMap[caller];
       const user_callee = charMap[callee];
-      
+
       let guest_gN = user_callee.groupNumber;
       let host_gN = user_caller.groupNumber;
-      
+
       console.log(guest_gN, host_gN);
-      
+
       if (guest_gN) {
         // 둘 중 한 명 Group 있을 때
         if (!host_gN) {
@@ -396,15 +396,15 @@ io.on("connection", function (socket) {
         // guest X && host O
         console.log("else일 때 host_gN: ", host_gN, "guest_gN: ", guest_gN);
       }
-    } catch(e) {
+    } catch (e) {
       console.log("user_call함수", e);
     }
   });
-    
+
   socket.on("offer", (offer, remoteSocketId, localNickname) => {
     socket.to(remoteSocketId).emit("offer", offer, socket.id, localNickname);
   });
-    
+
   socket.on("answer", (answer, remoteSocketId) => {
     socket.to(remoteSocketId).emit("answer", answer, socket.id);
   });
@@ -492,53 +492,31 @@ io.on("connection", function (socket) {
       },
       (error) => {
         console.log(error);
-  socket.on("ArtsAddr", (sender, receivers) => {
-    console.log(receivers);
-    receivers.forEach((eachReceiver) => {
-      socket.to(eachReceiver).emit("ShareAddr", sender); //nickname 추가
-    });
-  });
+        socket.on("ArtsAddr", (sender, receivers) => {
+          console.log(receivers);
+          receivers.forEach((eachReceiver) => {
+            socket.to(eachReceiver).emit("ShareAddr", sender); //nickname 추가
+          });
+        });
 
-  socket.on("cursorPosition", (cursorX, cursorY, socketId) => {
-    socket.broadcast.emit("shareCursorPosition", cursorX, cursorY, socketId);
-  });
+        socket.on("cursorPosition", (cursorX, cursorY, socketId) => {
+          socket.broadcast.emit("shareCursorPosition", cursorX, cursorY, socketId);
+        });
 
-  function removeUser(removeSid) {
-    let deleted = []; // player.id로 groupObjArr에서 roomName찾기
-    let findGroupName;
-    for (let i = 0; i < groupObjArr.length; i++) {
-      for (let j = 0; j < groupObjArr[i].users.length; j++) {
-        // 거리가 멀어질 player의 Sid로 화상통화 그룹 정보에 저장된 동일한 Sid를 찾아서 그룹에서 삭제해준다
-        if (removeSid === groupObjArr[i].users[j].socketId) {
-          findGroupName = groupObjArr[i].groupName;
-          // console.log('######', groupObjArr[i].users)
-          console.log("leave", groupObjArr[i].groupName);
-          console.log(typeof groupObjArr[i].groupName);
-          socket.leave(groupObjArr[i].groupName); //  socket Room 에서 삭제
-          console.log("socket에서 잘 삭제됐는지?", socket.rooms);
-          groupObjArr[i].users.splice(j, 1); // 우리가 따로 저장했던 배열에서도 삭제
-          console.log("*지웠나 체크 *", groupObjArr[i].users);
-          if (groupObjArr[i].users.length === 0) {
-            // for 빈 소켓 룸([]) 삭제 1
-            deleted.push(i);
-          }
-          break;
-        }
-      }
-    );
-  });
+      });
 
-  const addTransport = (transport, roomName, consumer) => {
-    transports = [
-      ...transports,
-      { socketId: socket.id, transport, roomName, consumer },
-    ];
+    const addTransport = (transport, roomName, consumer) => {
+      transports = [
+        ...transports,
+        { socketId: socket.id, transport, roomName, consumer },
+      ];
 
-    peers[socket.id] = {
-      ...peers[socket.id],
-      transports: [...peers[socket.id].transports, transport.id],
+      peers[socket.id] = {
+        ...peers[socket.id],
+        transports: [...peers[socket.id].transports, transport.id],
+      };
     };
-  };
+  });
 
   // see client's socket.emit('transport-connect', ...)
   socket.on("transport-connect", ({ dtlsParameters }) => {
@@ -816,27 +794,27 @@ io.on("connection", function (socket) {
         // for 빈 소켓 룸([]) 삭제 2
         groupObjArr.splice(deleted[i], 1);
       }
-      
+
       // WebRTC SFU (mediasoup)
       // do some cleanup
       consumers = removeItems(consumers, removeSid, "consumer");
       producers = removeItems(producers, removeSid, "producer");
       transports = removeItems(transports, removeSid, "transport");
-      
+
       const roomName = peers[removeSid].roomName;
       delete peers[removeSid];
-      
+
       // remove socket from room
       rooms[roomName] = {
         router: rooms[roomName].router,
         peers: rooms[roomName].peers.filter((socketId) => socketId !== removeSid),
       };
       // ^ WebRTC SFU (mediasoup) ^
-      
+
       console.log("____________leave_group____________");
-      socket.to(findGroupName).emit("leave_succ", {removeSid});
+      socket.to(findGroupName).emit("leave_succ", { removeSid });
       charMap[removeSid].groupNumber = 0;
-    } catch(e) {
+    } catch (e) {
       console.log('removeUser함수', e);
     }
   };
@@ -850,10 +828,10 @@ const removeItems = (items, socketId, type) => {
       }
     });
     items = items.filter((item) => item.socketId !== socketId);
-  
+
     return items;
 
-  } catch(e) {
+  } catch (e) {
     console.log('removeItem함수', e);
   }
 
@@ -888,7 +866,7 @@ function joinGroup(groupName, socket, nickname) {
   try {
     console.log("joinGroup");
     for (let i = 0; i < groupObjArr.length; ++i) {
-      console.log(`${i} 방 안에 있는 모든 유저의 소켓ID : `,groupObjArr[i].users);
+      console.log(`${i} 방 안에 있는 모든 유저의 소켓ID : `, groupObjArr[i].users);
       if (groupObjArr[i].groupName === groupName) {
         // Reject join the room
         // if (groupObjArr[i].users.length >= MAXIMUM) {
@@ -900,13 +878,13 @@ function joinGroup(groupName, socket, nickname) {
           socketId: socket.id,
           nickname,
         });
-  
+
         socket.join(groupName);
         socket.emit("accept_join", groupObjArr[i].groupName);
       }
     }
-  } catch(e) {
-    console.log('joinGroup함수',e);
+  } catch (e) {
+    console.log('joinGroup함수', e);
   }
 }
 
