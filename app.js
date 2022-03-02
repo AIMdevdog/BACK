@@ -591,6 +591,7 @@ io.on("connection", function (socket) {
 
   socket.on("getProducers", (callback) => {
     //return all producer transports
+    // consumer가 호출
     const { roomName } = peers[socket.id];
 
     let producerList = [];
@@ -675,7 +676,7 @@ io.on("connection", function (socket) {
   socket.on(
     "consume",
     async (
-      { rtpCapabilities, remoteProducerId, serverConsumerTransportId },
+      { rtpCapabilities, remoteProducerId, serverConsumerTransportId, remoteSocketId },
       callback
     ) => {
       console.log(socket.id);
@@ -708,7 +709,7 @@ io.on("connection", function (socket) {
 
           consumer.on("producerclose", () => {
             console.log("producer of consumer closed");
-            socket.emit("producer-closed", { remoteProducerId });
+            socket.emit("producer-closed", { remoteProducerId, remoteSocketId });
 
             consumerTransport.close([]);
             transports = transports.filter(
