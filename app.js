@@ -599,10 +599,11 @@ io.on("connection", function (socket) {
         producerData.socketId !== socket.id &&
         producerData.roomName === roomName
       ) {
-        producerList = [...producerList, producerData.producer.id, producerData.socketId];
+        producerList = [...producerList, { producerId: producerData.producer.id, socketId: producerData.socketId }];
       }
     });
-    console.log("^^^^^^^^^^^^^^^^^^ producerList : ", producerList);
+    console.log("&&&&&&&&&&&& socket id : ", socket.id)
+    // console.log("^^^^^^^^^^^^^^^^^^ producerList : ", producerList);
     // return the producer list back to the client
     callback(producerList);
   });
