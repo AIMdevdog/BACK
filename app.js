@@ -351,7 +351,7 @@ io.on("connection", function (socket) {
 
       if (guest_gN) {
         // 둘 중 한 명 Group 있을 때
-i        if (!host_gN) {
+        if (!host_gN) {
           await joinGroup(guest_gN, user_caller.socket, user_callee.nickname);
           user_caller.groupNumber = guest_gN;
           console.log(user_caller.groupNumber, user_callee.groupNumber);
