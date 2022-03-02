@@ -162,16 +162,6 @@ class GameObject {
   }
   pushInput(data) {
     this.buffer.push(...data);
-    // let stay_num = this.buffer.filter(
-    //   (element) =>
-    //     element.direction === undefined &&
-    //     element.x === data.x &&
-    //     element.y === data.y &&
-    //     element.nickname === data.nickname
-    // ).length;
-    // if (stay_num > 5) {
-    //   this.buffer = [];
-    // }
   }
   update_location() {
     const input = this.buffer.shift();
@@ -234,12 +224,6 @@ function leaveGame(socket) {
 
 function onInput(socket, data) {
   let user = charMap[socket.id];
-  // const inputData = {
-  //   x: data.x,
-  //   y: data.y,
-  //   direction: data.direction,
-  //   nickname: data.nickname,
-  // };
   user.pushInput(data);
 }
 
