@@ -72,8 +72,8 @@ module.exports = {
       listenIps: [
         {
           ip: "0.0.0.0", // server
-          // announcedIp: "52.79.251.200",
-          announcedIp: "127.0.0.1"
+          announcedIp: "52.79.251.200",
+          // announcedIp: "127.0.0.1"
 
           // ip: "0.0.0.0", // local
           // announcedIp: getLocalIp(), // replace by public IP address
