@@ -1,5 +1,5 @@
 const http = require("http");
-const https = require("httpolyglot");
+// const https = require("httpolyglot");
 const session = require("express-session");
 const MySQLStore = require("express-mysql-session")(session);
 const passport = require("passport");
@@ -22,27 +22,28 @@ const userRoomRouter = require("./routes/userRoom");
 const config = require("./config");
 
 const app = express();
+const PORT = 8000;
 
 // const options = {
 //   key: fs.readFileSync(config.sslKey),
 //   cert: fs.readFileSync(config.sslCrt),
 // };
 
-// const httpsServer = https.createServer(options, app);
 const httpServer = http.createServer(app);
-const PORT = 8000;
-// const io = require("socket.io")(httpsServer, {
-//   cors: {
-//     origin: ["http://localhost:3000", "https://dev-team-aim.com"],
-//     credentials: true,
-//   },
-// });
 const io = require("socket.io")(httpServer, {
   cors: {
     origin: ["http://localhost:3000", "https://dev-team-aim.com"],
     credentials: true,
   },
 });
+
+// const httpsServer = https.createServer(options, app);
+// const io = require("socket.io")(httpsServer, {
+//   cors: {
+//     origin: ["http://localhost:3000", "https://dev-team-aim.com"],
+//     credentials: true,
+//   },
+// });
 
 // WebRTC SFU (mediasoup)
 let worker;
@@ -135,13 +136,13 @@ app.use(function (err, req, res, next) {
   res.render("error");
 });
 
-// httpsServer.listen(process.env.PORT || 8000, () => {
-//   console.log(`Server running on ${PORT}`);
-// });
-
 httpServer.listen(process.env.PORT || 8000, () => {
   console.log(`Server running on ${PORT}`);
 });
+
+// httpsServer.listen(process.env.PORT || 8000, () => {
+//   console.log(`Server running on ${PORT}`);
+// });
 
 class GameObject {
   constructor(socket) {
@@ -358,7 +359,6 @@ io.on("connection", function (socket) {
 
   socket.on("user_call", async ({ caller, callee }) => {
     try {
-
       const user_caller = charMap[caller];
       const user_callee = charMap[callee];
 
@@ -472,9 +472,8 @@ io.on("connection", function (socket) {
   };
 
   socket.on("ArtsAddr", (sender, receivers) => {
-    console.log(receivers);
     receivers.forEach((eachReceiver) => {
-      socket.to(eachReceiver).emit("ShareAddr", sender); //nickname 추가
+      socket.to(eachReceiver?.id).emit("ShareAddr", sender); //nickname 추가
     });
   });
 
@@ -483,41 +482,45 @@ io.on("connection", function (socket) {
   });
 
   socket.on("createWebRtcTransport", async ({ consumer }, callback) => {
-    // get Room Name from Peer's properties
-    const roomName = peers[socket.id].roomName;
+    try {
+      // get Room Name from Peer's properties
+      const roomName = peers[socket.id].roomName;
+      // get Router (Room) object this peer is in based on RoomName
+      const router = rooms[roomName].router;
 
-    // get Router (Room) object this peer is in based on RoomName
-    const router = rooms[roomName].router;
+      createWebRtcTransport(router).then(
+        (transport) => {
+          callback({
+            params: {
+              id: transport.id,
+              iceParameters: transport.iceParameters,
+              iceCandidates: transport.iceCandidates,
+              dtlsParameters: transport.dtlsParameters,
+            },
+          });
 
-    createWebRtcTransport(router).then(
-      (transport) => {
-        callback({
-          params: {
-            id: transport.id,
-            iceParameters: transport.iceParameters,
-            iceCandidates: transport.iceCandidates,
-            dtlsParameters: transport.dtlsParameters,
-          },
-        });
+          // add transport to Peer's properties
+          addTransport(transport, roomName, consumer);
+        },
+        (error) => {
+          console.log(error);
+        }
+      );
 
-        // add transport to Peer's properties
-        addTransport(transport, roomName, consumer);
-      },
-      (error) => {
-        console.log(error);
-      });
+      const addTransport = (transport, roomName, consumer) => {
+        transports = [
+          ...transports,
+          { socketId: socket.id, transport, roomName, consumer },
+        ];
 
-    const addTransport = (transport, roomName, consumer) => {
-      transports = [
-        ...transports,
-        { socketId: socket.id, transport, roomName, consumer },
-      ];
-
-      peers[socket.id] = {
-        ...peers[socket.id],
-        transports: [...peers[socket.id].transports, transport.id],
+        peers[socket.id] = {
+          ...peers[socket.id],
+          transports: [...peers[socket.id].transports, transport.id],
+        };
       };
-    };
+    } catch (e) {
+      console.log("createWebRtcTransport <<<<< 에러", e);
+    }
   });
 
   // see client's socket.emit('transport-connect', ...)
@@ -537,13 +540,14 @@ io.on("connection", function (socket) {
   // see client's socket.emit('transport-produce', ...)
   socket.on(
     "transport-produce",
-    async ({ kind, rtpParameters, appData, track }, callback) => {
+    async ({ kind, rtpParameters, appData }, callback) => {
       // call produce based on the prameters from the client
       const producer = await getTransport(socket.id).produce({
         kind,
         rtpParameters,
-        track,
       });
+
+      console.log("%%%%%%%%%%%%%%%%% producerId : ", producer.id)
 
       // add producer to the producers array
       const { roomName } = peers[socket.id];
@@ -614,7 +618,7 @@ io.on("connection", function (socket) {
         producerList = [...producerList, producerData.producer.id, producerData.socketId];
       }
     });
-
+    console.log("^^^^^^^^^^^^^^^^^^ producerList : ", producerList);
     // return the producer list back to the client
     callback(producerList);
   });
@@ -630,11 +634,7 @@ io.on("connection", function (socket) {
       ) {
         const producerSocket = peers[producerData.socketId].socket;
         // use socket to send producer id to producer
-        producerSocket.emit("new-producer",
-          {
-            producerId: id,
-            socketId: socketId,
-          });
+        producerSocket.emit("new-producer", { producerId: id, socketId: socketId });
       }
     });
   };
@@ -777,7 +777,6 @@ io.on("connection", function (socket) {
 
   function removeUser(removeSid) {
     try {
-
       let deleted = []; // player.id로 groupObjArr에서 roomName찾기
       let findGroupName;
       for (let i = 0; i < groupObjArr.length; i++) {
@@ -814,7 +813,9 @@ io.on("connection", function (socket) {
       // remove socket from room
       rooms[roomName] = {
         router: rooms[roomName].router,
-        peers: rooms[roomName].peers.filter((socketId) => socketId !== removeSid),
+        peers: rooms[roomName].peers.filter(
+          (socketId) => socketId !== removeSid
+        ),
       };
       // ^ WebRTC SFU (mediasoup) ^
 
@@ -822,9 +823,9 @@ io.on("connection", function (socket) {
       socket.to(findGroupName).emit("leave_succ", { removeSid });
       charMap[removeSid].groupNumber = 0;
     } catch (e) {
-      console.log('removeUser함수', e);
+      console.log("removeUser함수", e);
     }
-  };
+  }
 });
 
 const removeItems = (items, socketId, type) => {
@@ -837,11 +838,9 @@ const removeItems = (items, socketId, type) => {
     items = items.filter((item) => item.socketId !== socketId);
 
     return items;
-
   } catch (e) {
-    console.log('removeItem함수', e);
+    console.log("removeItem함수", e);
   }
-
 };
 
 //when caller make the room
@@ -864,7 +863,7 @@ function makeGroup(socket) {
     socket.emit("accept_join", initGroupObj.groupName);
     return groupName;
   } catch (e) {
-    console.log('makeGroup함수', e)
+    console.log("makeGroup함수", e);
   }
 }
 
@@ -873,7 +872,10 @@ function joinGroup(groupName, socket, nickname) {
   try {
     console.log("joinGroup");
     for (let i = 0; i < groupObjArr.length; ++i) {
-      console.log(`${i} 방 안에 있는 모든 유저의 소켓ID : `, groupObjArr[i].users);
+      console.log(
+        `${i} 방 안에 있는 모든 유저의 소켓ID : `,
+        groupObjArr[i].users
+      );
       if (groupObjArr[i].groupName === groupName) {
         // Reject join the room
         // if (groupObjArr[i].users.length >= MAXIMUM) {
@@ -891,9 +893,8 @@ function joinGroup(groupName, socket, nickname) {
       }
     }
   } catch (e) {
-    console.log('joinGroup함수', e);
+    console.log("joinGroup함수", e);
   }
 }
-
 
 module.exports = app;
