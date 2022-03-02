@@ -161,17 +161,7 @@ class GameObject {
     return this.socket.id;
   }
   pushInput(data) {
-    this.buffer.push(data);
-    let stay_num = this.buffer.filter(
-      (element) =>
-        element.direction === undefined &&
-        element.x === data.x &&
-        element.y === data.y &&
-        element.nickname === data.nickname
-    ).length;
-    if (stay_num > 5) {
-      this.buffer = [];
-    }
+    this.buffer.push(...data);
   }
   update_location() {
     const input = this.buffer.shift();
@@ -233,14 +223,8 @@ function leaveGame(socket) {
 }
 
 function onInput(socket, data) {
-  let user = charMap[data.id];
-  const inputData = {
-    x: data.x,
-    y: data.y,
-    direction: data.direction,
-    nickname: data.nickname,
-  };
-  user.pushInput(inputData);
+  let user = charMap[socket.id];
+  user.pushInput(data);
 }
 
 function updateGame() {
@@ -367,7 +351,7 @@ io.on("connection", function (socket) {
 
       if (guest_gN) {
         // 둘 중 한 명 Group 있을 때
-        if (!host_gN) {
+i        if (!host_gN) {
           await joinGroup(guest_gN, user_caller.socket, user_callee.nickname);
           user_caller.groupNumber = guest_gN;
           console.log(user_caller.groupNumber, user_callee.groupNumber);
