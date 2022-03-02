@@ -160,17 +160,17 @@ class GameObject {
     return this.socket.id;
   }
   pushInput(data) {
-    this.buffer.push(data);
-    let stay_num = this.buffer.filter(
-      (element) =>
-        element.direction === undefined &&
-        element.x === data.x &&
-        element.y === data.y &&
-        element.nickname === data.nickname
-    ).length;
-    if (stay_num > 5) {
-      this.buffer = [];
-    }
+    this.buffer.push(...data);
+    // let stay_num = this.buffer.filter(
+    //   (element) =>
+    //     element.direction === undefined &&
+    //     element.x === data.x &&
+    //     element.y === data.y &&
+    //     element.nickname === data.nickname
+    // ).length;
+    // if (stay_num > 5) {
+    //   this.buffer = [];
+    // }
   }
   update_location() {
     const input = this.buffer.shift();
@@ -232,14 +232,14 @@ function leaveGame(socket) {
 }
 
 function onInput(socket, data) {
-  let user = charMap[data.id];
-  const inputData = {
-    x: data.x,
-    y: data.y,
-    direction: data.direction,
-    nickname: data.nickname,
-  };
-  user.pushInput(inputData);
+  let user = charMap[socket.id];
+  // const inputData = {
+  //   x: data.x,
+  //   y: data.y,
+  //   direction: data.direction,
+  //   nickname: data.nickname,
+  // };
+  user.pushInput(data);
 }
 
 function updateGame() {
@@ -296,8 +296,9 @@ const { mediaCodecs } = config.mediasoup.router;
 io.on("connection", function (socket) {
   console.log(`${socket.id} has joined!`);
   socket.on("disconnect", function (reason) {
+    console.log(`${socket.id} has leaved ${reason}!`);
     const leaveUser = charMap[socket.id];
-    socket.to(leaveUser.roomId).emit("leave_user", {
+    socket.to(leaveUser?.roomId).emit("leave_user", {
       id: socket.id,
       nickname: leaveUser.nickname,
     });
@@ -309,6 +310,7 @@ io.on("connection", function (socket) {
   });
 
   socket.on("input", function (data) {
+    console.log(data);
     onInput(socket, data);
   });
   socket.emit("join_user");
@@ -469,6 +471,17 @@ io.on("connection", function (socket) {
     return router1;
   };
 
+  socket.on("ArtsAddr", (sender, receivers) => {
+    console.log(receivers);
+    receivers.forEach((eachReceiver) => {
+      socket.to(eachReceiver).emit("ShareAddr", sender); //nickname 추가
+    });
+  });
+
+  socket.on("cursorPosition", (cursorX, cursorY, socketId) => {
+    socket.broadcast.emit("shareCursorPosition", cursorX, cursorY, socketId);
+  });
+
   socket.on("createWebRtcTransport", async ({ consumer }, callback) => {
     // get Room Name from Peer's properties
     const roomName = peers[socket.id].roomName;
@@ -492,17 +505,6 @@ io.on("connection", function (socket) {
       },
       (error) => {
         console.log(error);
-        socket.on("ArtsAddr", (sender, receivers) => {
-          console.log(receivers);
-          receivers.forEach((eachReceiver) => {
-            socket.to(eachReceiver).emit("ShareAddr", sender); //nickname 추가
-          });
-        });
-
-        socket.on("cursorPosition", (cursorX, cursorY, socketId) => {
-          socket.broadcast.emit("shareCursorPosition", cursorX, cursorY, socketId);
-        });
-
       });
 
     const addTransport = (transport, roomName, consumer) => {
@@ -609,7 +611,7 @@ io.on("connection", function (socket) {
         producerData.socketId !== socket.id &&
         producerData.roomName === roomName
       ) {
-        producerList = [...producerList, producerData.producer.id];
+        producerList = [...producerList, producerData.producer.id, producerData.socketId];
       }
     });
 
@@ -628,7 +630,11 @@ io.on("connection", function (socket) {
       ) {
         const producerSocket = peers[producerData.socketId].socket;
         // use socket to send producer id to producer
-        producerSocket.emit("new-producer", { producerId: id });
+        producerSocket.emit("new-producer",
+          {
+            producerId: id,
+            socketId: socketId,
+          });
       }
     });
   };
@@ -687,6 +693,7 @@ io.on("connection", function (socket) {
       { rtpCapabilities, remoteProducerId, serverConsumerTransportId },
       callback
     ) => {
+      console.log(socket.id);
       try {
         const { roomName } = peers[socket.id];
         const router = rooms[roomName].router;
