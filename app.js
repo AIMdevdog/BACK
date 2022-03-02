@@ -1,5 +1,5 @@
 const http = require("http");
-const https = require("httpolyglot");
+// const https = require("httpolyglot");
 const session = require("express-session");
 const MySQLStore = require("express-mysql-session")(session);
 const passport = require("passport");
@@ -24,10 +24,10 @@ const config = require("./config");
 const app = express();
 const PORT = 8000;
 
-const options = {
-  // key: fs.readFileSync(config.sslKey),
-  // cert: fs.readFileSync(config.sslCrt),
-};
+// const options = {
+//   key: fs.readFileSync(config.sslKey),
+//   cert: fs.readFileSync(config.sslCrt),
+// };
 
 const httpServer = http.createServer(app);
 const io = require("socket.io")(httpServer, {
@@ -538,13 +538,14 @@ io.on("connection", function (socket) {
   // see client's socket.emit('transport-produce', ...)
   socket.on(
     "transport-produce",
-    async ({ kind, rtpParameters, appData, track }, callback) => {
+    async ({ kind, rtpParameters, appData }, callback) => {
       // call produce based on the prameters from the client
       const producer = await getTransport(socket.id).produce({
         kind,
         rtpParameters,
-        track,
       });
+
+      console.log("%%%%%%%%%%%%%%%%% producerId : ", producer.id)
 
       // add producer to the producers array
       const { roomName } = peers[socket.id];
@@ -612,10 +613,10 @@ io.on("connection", function (socket) {
         producerData.socketId !== socket.id &&
         producerData.roomName === roomName
       ) {
-        producerList = [...producerList, producerData.producer.id];
+        producerList = [...producerList, producerData.producer.id, producerData.socketId];
       }
     });
-
+    console.log("^^^^^^^^^^^^^^^^^^ producerList : ", producerList);
     // return the producer list back to the client
     callback(producerList);
   });
@@ -631,7 +632,7 @@ io.on("connection", function (socket) {
       ) {
         const producerSocket = peers[producerData.socketId].socket;
         // use socket to send producer id to producer
-        producerSocket.emit("new-producer", { producerId: id });
+        producerSocket.emit("new-producer", { producerId: id, socketId: socketId });
       }
     });
   };
