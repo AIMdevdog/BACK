@@ -1,5 +1,5 @@
 const http = require("http");
-// const https = require("httpolyglot");
+const https = require("httpolyglot");
 const session = require("express-session");
 const MySQLStore = require("express-mysql-session")(session);
 const passport = require("passport");
@@ -24,26 +24,26 @@ const config = require("./config");
 const app = express();
 const PORT = 8000;
 
-// const options = {
-//   key: fs.readFileSync(config.sslKey),
-//   cert: fs.readFileSync(config.sslCrt),
-// };
+const options = {
+  key: fs.readFileSync(config.sslKey),
+  cert: fs.readFileSync(config.sslCrt),
+};
 
-const httpServer = http.createServer(app);
-const io = require("socket.io")(httpServer, {
-  cors: {
-    origin: ["http://localhost:3000", "https://dev-team-aim.com"],
-    credentials: true,
-  },
-});
-
-// const httpsServer = https.createServer(options, app);
-// const io = require("socket.io")(httpsServer, {
+// const httpServer = http.createServer(app);
+// const io = require("socket.io")(httpServer, {
 //   cors: {
 //     origin: ["http://localhost:3000", "https://dev-team-aim.com"],
 //     credentials: true,
 //   },
 // });
+
+const httpsServer = https.createServer(options, app);
+const io = require("socket.io")(httpsServer, {
+  cors: {
+    origin: ["http://localhost:3000", "https://dev-team-aim.com"],
+    credentials: true,
+  },
+});
 
 // WebRTC SFU (mediasoup)
 let worker;
@@ -136,13 +136,13 @@ app.use(function (err, req, res, next) {
   res.render("error");
 });
 
-httpServer.listen(process.env.PORT || 8000, () => {
-  console.log(`Server running on ${PORT}`);
-});
-
-// httpsServer.listen(process.env.PORT || 8000, () => {
+// httpServer.listen(process.env.PORT || 8000, () => {
 //   console.log(`Server running on ${PORT}`);
 // });
+
+httpsServer.listen(process.env.PORT || 8000, () => {
+  console.log(`Server running on ${PORT}`);
+});
 
 class GameObject {
   constructor(socket) {
@@ -530,7 +530,7 @@ io.on("connection", function (socket) {
         rtpParameters,
       });
 
-      console.log("%%%%%%%%%%%%%%%%% producerId : ", producer.id)
+      console.log("%%%%%%%%%%%%%%%%% producerId : ", producer.id);
 
       // add producer to the producers array
       const { roomName } = peers[socket.id];
@@ -599,10 +599,16 @@ io.on("connection", function (socket) {
         producerData.socketId !== socket.id &&
         producerData.roomName === roomName
       ) {
-        producerList = [...producerList, { producerId: producerData.producer.id, socketId: producerData.socketId }];
+        producerList = [
+          ...producerList,
+          {
+            producerId: producerData.producer.id,
+            socketId: producerData.socketId,
+          },
+        ];
       }
     });
-    console.log("&&&&&&&&&&&& socket id : ", socket.id)
+    console.log("&&&&&&&&&&&& socket id : ", socket.id);
     // console.log("^^^^^^^^^^^^^^^^^^ producerList : ", producerList);
     // return the producer list back to the client
     callback(producerList);
@@ -619,7 +625,10 @@ io.on("connection", function (socket) {
       ) {
         const producerSocket = peers[producerData.socketId].socket;
         // use socket to send producer id to producer
-        producerSocket.emit("new-producer", { producerId: id, socketId: socketId });
+        producerSocket.emit("new-producer", {
+          producerId: id,
+          socketId: socketId,
+        });
       }
     });
   };
@@ -675,7 +684,12 @@ io.on("connection", function (socket) {
   socket.on(
     "consume",
     async (
-      { rtpCapabilities, remoteProducerId, serverConsumerTransportId, remoteSocketId },
+      {
+        rtpCapabilities,
+        remoteProducerId,
+        serverConsumerTransportId,
+        remoteSocketId,
+      },
       callback
     ) => {
       console.log(socket.id);
@@ -708,7 +722,10 @@ io.on("connection", function (socket) {
 
           consumer.on("producerclose", () => {
             console.log("producer of consumer closed");
-            socket.emit("producer-closed", { remoteProducerId, remoteSocketId });
+            socket.emit("producer-closed", {
+              remoteProducerId,
+              remoteSocketId,
+            });
 
             consumerTransport.close([]);
             transports = transports.filter(
