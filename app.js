@@ -295,7 +295,6 @@ io.on("connection", function (socket) {
   });
 
   socket.on("input", function (data) {
-    console.log(data);
     onInput(socket, data);
   });
   socket.emit("join_user");
