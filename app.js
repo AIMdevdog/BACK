@@ -25,25 +25,25 @@ const app = express();
 const PORT = 8000;
 
 const options = {
-  key: fs.readFileSync(config.sslKey),
-  cert: fs.readFileSync(config.sslCrt),
+  // key: fs.readFileSync(config.sslKey),
+  // cert: fs.readFileSync(config.sslCrt),
 };
 
-// const httpServer = http.createServer(app);
-// const io = require("socket.io")(httpServer, {
-//   cors: {
-//     origin: ["http://localhost:3000", "https://dev-team-aim.com"],
-//     credentials: true,
-//   },
-// });
-
-const httpsServer = https.createServer(options, app);
-const io = require("socket.io")(httpsServer, {
+const httpServer = http.createServer(app);
+const io = require("socket.io")(httpServer, {
   cors: {
     origin: ["http://localhost:3000", "https://dev-team-aim.com"],
     credentials: true,
   },
 });
+
+// const httpsServer = https.createServer(options, app);
+// const io = require("socket.io")(httpsServer, {
+//   cors: {
+//     origin: ["http://localhost:3000", "https://dev-team-aim.com"],
+//     credentials: true,
+//   },
+// });
 
 // WebRTC SFU (mediasoup)
 let worker;
@@ -136,13 +136,13 @@ app.use(function (err, req, res, next) {
   res.render("error");
 });
 
-// httpServer.listen(process.env.PORT || 8000, () => {
-//   console.log(`Server running on ${PORT}`);
-// });
-
-httpsServer.listen(process.env.PORT || 8000, () => {
+httpServer.listen(process.env.PORT || 8000, () => {
   console.log(`Server running on ${PORT}`);
 });
+
+// httpsServer.listen(process.env.PORT || 8000, () => {
+//   console.log(`Server running on ${PORT}`);
+// });
 
 class GameObject {
   constructor(socket) {
@@ -398,10 +398,21 @@ io.on("connection", function (socket) {
     socket.to(remoteSocketId).emit("ice", ice, socket.id);
   });
 
-  socket.on("chat", (message, roomName) => {
-    if (socket.rooms.has(roomName)) {
-      socket.to(roomName).emit("chat", message);
-    }
+  // prev chat socket (Send it to a specific room)
+
+  //
+  // socket.on("chat", (message, roomName) => {
+  // if (socket.rooms.has(roomName)) {
+  //   socket.to(roomName).emit("chat", message);
+  // }
+  // });
+
+  // current chat socket (Send it to all users)
+  //
+  socket.on("chat", (isChatInfo, receivers) => {
+    receivers.forEach((eachReceiver) => {
+      socket.to(eachReceiver?.id).emit("chat", isChatInfo); //nickname 추가
+    });
   });
 
   // WebRTC SFU (mediasoup)           // roomName <== groupName(int)
