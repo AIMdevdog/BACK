@@ -284,12 +284,12 @@ io.on("connection", function (socket) {
     console.log(`${socket.id} has leaved ${reason}!`);
     const leaveUser = charMap[socket.id];
     socket.to(leaveUser?.roomId).emit("leave_user", {
-      id: socket.id,
-      nickname: leaveUser.nickname,
+      id: socket?.id,
+      nickname: leaveUser?.nickname,
     });
 
     if (peers[socket.id]) {
-      removeUser(socket.id);
+      removeUser(socket?.id);
     }
     leaveGame(socket);
   });
@@ -789,6 +789,7 @@ io.on("connection", function (socket) {
   });
 
   function removeUser(removeSid) {
+    // console.log(removeSid, "---------------------");
     try {
       let deleted = []; // player.id로 groupObjArr에서 roomName찾기
       let findGroupName;
