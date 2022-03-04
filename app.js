@@ -290,7 +290,7 @@ const { mediaCodecs } = config.mediasoup.router;
 
 io.on("connection", function (socket) {
   console.log(`${socket?.id} has joined!`);
-  socket.on("disconnecting", function (reason) {
+  socket.on("disconnect", function (reason) {
     try {
       console.log(`${socket?.id} has leaved ${reason}!`);
       const leaveUser = charMap[socket?.id];
@@ -475,7 +475,7 @@ io.on("connection", function (socket) {
   });
 
   socket.on("cursorPosition", (cursorX, cursorY, socketId) => {
-    socket.broadcast.emit("shareCursorPosition", cursorX, cursorY, socketId);
+    socket.broadcast.emit("shareCursorPosition", cursorX, cursorY, charMap[socketId].nickname);
   });
 
   socket.on("createWebRtcTransport", async ({ consumer }, callback) => {
