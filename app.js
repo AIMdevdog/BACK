@@ -25,25 +25,25 @@ const app = express();
 const PORT = 8000;
 
 const options = {
-  // key: fs.readFileSync(config.sslKey),
-  // cert: fs.readFileSync(config.sslCrt),
+   key: fs.readFileSync(config.sslKey),
+   cert: fs.readFileSync(config.sslCrt),
 };
 
-const httpServer = http.createServer(app);
-const io = require("socket.io")(httpServer, {
-  cors: {
-    origin: ["http://localhost:3000", "https://dev-team-aim.com"],
-    credentials: true,
-  },
-});
-
-// const httpsServer = https.createServer(options, app);
-// const io = require("socket.io")(httpsServer, {
-//   cors: {
-//     origin: ["http://localhost:3000", "https://dev-team-aim.com"],
-//     credentials: true,
-//   },
+// const httpServer = http.createServer(app);
+// const io = require("socket.io")(httpServer, {
+//  cors: {
+//    origin: ["http://localhost:3000", "https://dev-team-aim.com"],
+//    credentials: true,
+//  },
 // });
+
+ const httpsServer = https.createServer(options, app);
+ const io = require("socket.io")(httpsServer, {
+   cors: {
+     origin: ["http://localhost:3000", "https://dev-team-aim.com"],
+     credentials: true,
+   },
+ });
 
 // WebRTC SFU (mediasoup)
 let worker;
@@ -145,13 +145,13 @@ app.use(function (err, req, res, next) {
   res.render("error");
 });
 
-httpServer.listen(process.env.PORT || 8000, () => {
-  console.log(`Server running on ${PORT}`);
-});
-
-// httpsServer.listen(process.env.PORT || 8000, () => {
-//   console.log(`Server running on ${PORT}`);
+// httpServer.listen(process.env.PORT || 8000, () => {
+//  console.log(`Server running on ${PORT}`);
 // });
+
+httpsServer.listen(process.env.PORT || 8000, () => {
+   console.log(`Server running on ${PORT}`);
+});
 
 class GameObject {
   constructor(socket) {
@@ -669,8 +669,8 @@ io.on("connection", function (socket) {
   const createWebRtcTransport = async (router) => {
     return new Promise(async (resolve, reject) => {
       try {
-        const { initialAvailableOutgoingBitrate } =
-          config.mediasoup.webRtcTransport;
+        // const { initialAvailableOutgoingBitrate } =
+        //   config.mediasoup.webRtcTransport;
         // https://mediasoup.org/documentation/v3/mediasoup/api/#WebRtcTransportOptions
         const webRtcTransport_options = {
           // listenIps: [
@@ -688,7 +688,7 @@ io.on("connection", function (socket) {
           enableUdp: true,
           enableTcp: true,
           preferUdp: true,
-          initialAvailableOutgoingBitrate,
+          // initialAvailableOutgoingBitrate,
         };
 
         // https://mediasoup.org/documentation/v3/mediasoup/api/#router-createWebRtcTransport
