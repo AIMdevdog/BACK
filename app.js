@@ -580,13 +580,17 @@ io.on("connection", function (socket) {
   socket.on(
     "transport-recv-connect",
     async ({ dtlsParameters, serverConsumerTransportId }) => {
-      // console.log(`DTLS PARAMS: ${dtlsParameters}`)
-      const consumerTransport = transports.find(
-        (transportData) =>
+      try {
+        // console.log(`DTLS PARAMS: ${dtlsParameters}`)
+        const consumerTransport = await transports.find(
+          (transportData) =>
           transportData.consumer &&
           transportData.transport.id == serverConsumerTransportId
-      ).transport;
-      await consumerTransport.connect({ dtlsParameters });
+          )?.transport;
+        await consumerTransport.connect({ dtlsParameters });
+      } catch(e) {
+        console.log('transport-recv-connect소켓', e);
+      }
     }
   );
 
