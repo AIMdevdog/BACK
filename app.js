@@ -102,14 +102,14 @@ let groupObjArr = [
   // },
 ];
 
-let groupUsers = [
-  {
-    groupName : {
-      socketId,
-      nickname,
-    }
-  }
-] 
+// let groupUsers = [
+//   {
+//     groupName : {
+//       socketId,
+//       nickname,
+//     }
+//   }
+// ] 
 
 app.use(cors(corsOption));
 app.use(express.static("public"));
