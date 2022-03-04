@@ -25,25 +25,25 @@ const app = express();
 const PORT = 8000;
 
 const options = {
-  key: fs.readFileSync(config.sslKey),
-  cert: fs.readFileSync(config.sslCrt),
+  // key: fs.readFileSync(config.sslKey),
+  // cert: fs.readFileSync(config.sslCrt),
 };
 
-// const httpServer = http.createServer(app);
-// const io = require("socket.io")(httpServer, {
-//   cors: {
-//     origin: ["http://localhost:3000", "https://dev-team-aim.com"],
-//     credentials: true,
-//   },
-// });
-
-const httpsServer = https.createServer(options, app);
-const io = require("socket.io")(httpsServer, {
+const httpServer = http.createServer(app);
+const io = require("socket.io")(httpServer, {
   cors: {
     origin: ["http://localhost:3000", "https://dev-team-aim.com"],
     credentials: true,
   },
 });
+
+// const httpsServer = https.createServer(options, app);
+// const io = require("socket.io")(httpsServer, {
+//   cors: {
+//     origin: ["http://localhost:3000", "https://dev-team-aim.com"],
+//     credentials: true,
+//   },
+// });
 
 // WebRTC SFU (mediasoup)
 let worker;
@@ -109,7 +109,7 @@ let groupObjArr = [
 //       nickname,
 //     }
 //   }
-// ] 
+// ]
 
 app.use(cors(corsOption));
 app.use(express.static("public"));
@@ -145,13 +145,13 @@ app.use(function (err, req, res, next) {
   res.render("error");
 });
 
-// httpServer.listen(process.env.PORT || 8000, () => {
-//   console.log(`Server running on ${PORT}`);
-// });
-
-httpsServer.listen(process.env.PORT || 8000, () => {
+httpServer.listen(process.env.PORT || 8000, () => {
   console.log(`Server running on ${PORT}`);
 });
+
+// httpsServer.listen(process.env.PORT || 8000, () => {
+//   console.log(`Server running on ${PORT}`);
+// });
 
 class GameObject {
   constructor(socket) {
@@ -289,21 +289,17 @@ worker = createWorker();
 const { mediaCodecs } = config.mediasoup.router;
 
 io.on("connection", function (socket) {
-  console.log(`${socket?.id} has joined!`);
-  socket.on("disconnecting", function (reason) {
-    try {
-      console.log(`${socket?.id} has leaved ${reason}!`);
-      const leaveUser = charMap[socket?.id];
-      socket.to(leaveUser?.roomId).emit("leave_user", {
-        id: socket?.id,
-        nickname: leaveUser?.nickname,
-      });
-      // if (peers[socket?.id]) {
+  console.log(`${socket.id} has joined!`);
+  socket.on("disconnect", function (reason) {
+    console.log(`${socket.id} has leaved ${reason}!`);
+    const leaveUser = charMap[socket.id];
+    socket.to(leaveUser?.roomId).emit("leave_user", {
+      id: socket?.id,
+      nickname: leaveUser?.nickname,
+    });
+
+    if (peers[socket.id]) {
       removeUser(socket?.id);
-      // }
-      leaveGame(socket);
-    } catch(e) {
-      console.log('disconnect 소켓', e);
     }
   });
 
@@ -411,11 +407,21 @@ io.on("connection", function (socket) {
     socket.to(remoteSocketId).emit("ice", ice, socket.id);
   });
 
-  socket.on("chat", (message, groupName) => {
-    console.log("chat get?")
-    // if (socket.rooms.has(roomName)) {
-    socket.to(groupName).emit("chat", message);
-    // }
+  // prev chat socket (Send it to a specific room)
+
+  //
+  // socket.on("chat", (message, roomName) => {
+  // if (socket.rooms.has(roomName)) {
+  //   socket.to(roomName).emit("chat", message);
+  // }
+  // });
+
+  // current chat socket (Send it to all users)
+  //
+  socket.on("chat", (isChatInfo, receivers) => {
+    receivers.forEach((eachReceiver) => {
+      socket.to(eachReceiver?.id).emit("chat", isChatInfo); //nickname 추가
+    });
   });
 
   // WebRTC SFU (mediasoup)           // roomName <== groupName(int)
@@ -525,7 +531,7 @@ io.on("connection", function (socket) {
     // console.log('DTLS PARAMS... ', { dtlsParameters })
     try {
       await getTransport(socket.id).connect({ dtlsParameters });
-    } catch(e) {
+    } catch (e) {
       console.log(e);
     }
   });
@@ -542,36 +548,35 @@ io.on("connection", function (socket) {
     "transport-produce",
     async ({ kind, rtpParameters, appData }, callback) => {
       try {
-
         // call produce based on the prameters from the client
         const producer = await getTransport(socket.id).produce({
           kind,
           rtpParameters,
         });
-        
+
         console.log("%%%%%%%%%%%%%%%%% producerId : ", producer.id);
-        
+
         // add producer to the producers array
         const { roomName } = peers[socket.id];
-        
+
         await addProducer(producer, roomName);
-        
+
         await informConsumers(roomName, socket.id, producer.id);
-        
+
         // console.log('Producer ID: ', producer.id, producer.kind);
-        
-        producer.on("transportclose", async() => {
+
+        producer.on("transportclose", async () => {
           // console.log('transport for this producer closed ')
           await producer.close();
         });
-        
+
         // Send back to the client the Producer's id
         callback({
           id: producer.id,
           producersExist: producers.length > 1 ? true : false,
         });
-      } catch(e) {
-        console.log('transport-produce소켓', e);
+      } catch (e) {
+        console.log("transport-produce소켓", e);
       }
     }
   );
@@ -584,12 +589,12 @@ io.on("connection", function (socket) {
         // console.log(`DTLS PARAMS: ${dtlsParameters}`)
         const consumerTransport = await transports.find(
           (transportData) =>
-          transportData.consumer &&
-          transportData.transport.id == serverConsumerTransportId
-          )?.transport;
+            transportData.consumer &&
+            transportData.transport.id == serverConsumerTransportId
+        )?.transport;
         await consumerTransport.connect({ dtlsParameters });
-      } catch(e) {
-        console.log('transport-recv-connect소켓', e);
+      } catch (e) {
+        console.log("transport-recv-connect소켓", e);
       }
     }
   );
@@ -792,12 +797,12 @@ io.on("connection", function (socket) {
 
   socket.on("consumer-resume", async ({ serverConsumerId }) => {
     try {
-      const { consumer } =  consumers.find(
+      const { consumer } = consumers.find(
         (consumerData) => consumerData.consumer.id === serverConsumerId
       );
       await consumer?.resume();
-    } catch(e) {
-      console.log("consumer-resume", e)
+    } catch (e) {
+      console.log("consumer-resume", e);
     }
   });
 
@@ -812,16 +817,21 @@ io.on("connection", function (socket) {
       let deleted = []; // player.id로 groupObjArr에서 roomName찾기
       let findGroupName;
       for (let i = 0; i < groupObjArr.length; i++) {
-        
         for (let j = 0; j < groupObjArr[i].users.length; j++) {
           // 거리가 멀어질 player의 Sid로 화상통화 그룹 정보에 저장된 동일한 Sid를 찾아서 그룹에서 삭제해준다
           if (removeSid === groupObjArr[i].users[j].socketId) {
             findGroupName = groupObjArr[i].groupName;
             socket.leave(groupObjArr[i].groupName); //  socket Room 에서 삭제
             // console.log("socket에서 잘 삭제됐는지?", socket.rooms);
-            console.log(`[server] groupObjArr[${i}].users[${j}]를 삭제`, groupObjArr[i].users[j]);
+            console.log(
+              `[server] groupObjArr[${i}].users[${j}]를 삭제`,
+              groupObjArr[i].users[j]
+            );
             groupObjArr[i].users.splice(j, 1); // 우리가 따로 저장했던 배열에서도 삭제
-            console.log(`[server] groupObjArr[${i}].users` , groupObjArr[i].users);
+            console.log(
+              `[server] groupObjArr[${i}].users`,
+              groupObjArr[i].users
+            );
             if (groupObjArr[i].users.length === 0) {
               // for 빈 소켓 룸([]) 삭제 1
               deleted.push(i);
@@ -830,7 +840,7 @@ io.on("connection", function (socket) {
           }
         }
       }
-      console.log(groupObjArr)
+      console.log(groupObjArr);
       for (let i = 0; i < deleted.length; i++) {
         // for 빈 소켓 룸([]) 삭제 2
         groupObjArr.splice(deleted[i], 1);
@@ -841,7 +851,9 @@ io.on("connection", function (socket) {
       consumers = await removeItems(consumers, removeSid, "consumer");
       producers = await removeItems(producers, removeSid, "producer");
       transports = await removeItems(transports, removeSid, "transport");
-      console.log(`consumers ${consumers}, producers ${producers}, transports ${transports}`)
+      console.log(
+        `consumers ${consumers}, producers ${producers}, transports ${transports}`
+      );
       const roomName = peers[removeSid].roomName;
       delete peers[removeSid];
 
