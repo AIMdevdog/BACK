@@ -575,7 +575,6 @@ io.on("connection", function (socket) {
       }
     }
   );
-
   // see client's socket.emit('transport-recv-connect', ...)
   socket.on(
     "transport-recv-connect",
