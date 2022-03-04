@@ -486,7 +486,7 @@ io.on("connection", function (socket) {
       const router = rooms[roomName].router;
 
       createWebRtcTransport(router).then(
-        (transport) => {
+        async (transport) => {
           callback({
             params: {
               id: transport.id,
@@ -497,7 +497,7 @@ io.on("connection", function (socket) {
           });
 
           // add transport to Peer's properties
-          addTransport(transport, roomName, consumer);
+          await addTransport(transport, roomName, consumer);
         },
         (error) => {
           console.log(error);
@@ -507,12 +507,12 @@ io.on("connection", function (socket) {
       const addTransport = (transport, roomName, consumer) => {
         transports = [
           ...transports,
-          { socketId: socket.id, transport, roomName, consumer },
+          { socketId: socket?.id, transport, roomName, consumer },
         ];
 
-        peers[socket.id] = {
-          ...peers[socket.id],
-          transports: [...peers[socket.id].transports, transport.id],
+        peers[socket?.id] = {
+          ...peers[socket?.id],
+          transports: [...peers[socket?.id]?.transports, transport?.id],
         };
       };
     } catch (e) {
