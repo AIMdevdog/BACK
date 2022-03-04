@@ -541,33 +541,38 @@ io.on("connection", function (socket) {
   socket.on(
     "transport-produce",
     async ({ kind, rtpParameters, appData }, callback) => {
-      // call produce based on the prameters from the client
-      const producer = await getTransport(socket.id).produce({
-        kind,
-        rtpParameters,
-      });
+      try {
 
-      console.log("%%%%%%%%%%%%%%%%% producerId : ", producer.id);
-
-      // add producer to the producers array
-      const { roomName } = peers[socket.id];
-
-      addProducer(producer, roomName);
-
-      informConsumers(roomName, socket.id, producer.id);
-
-      // console.log('Producer ID: ', producer.id, producer.kind);
-
-      producer.on("transportclose", () => {
-        // console.log('transport for this producer closed ')
-        producer.close();
-      });
-
-      // Send back to the client the Producer's id
-      callback({
-        id: producer.id,
-        producersExist: producers.length > 1 ? true : false,
-      });
+        // call produce based on the prameters from the client
+        const producer = await getTransport(socket.id).produce({
+          kind,
+          rtpParameters,
+        });
+        
+        console.log("%%%%%%%%%%%%%%%%% producerId : ", producer.id);
+        
+        // add producer to the producers array
+        const { roomName } = peers[socket.id];
+        
+        await addProducer(producer, roomName);
+        
+        await informConsumers(roomName, socket.id, producer.id);
+        
+        // console.log('Producer ID: ', producer.id, producer.kind);
+        
+        producer.on("transportclose", async() => {
+          // console.log('transport for this producer closed ')
+          await producer.close();
+        });
+        
+        // Send back to the client the Producer's id
+        callback({
+          id: producer.id,
+          producersExist: producers.length > 1 ? true : false,
+        });
+      } catch(e) {
+        console.log('transport-produce소켓', e);
+      }
     }
   );
 
