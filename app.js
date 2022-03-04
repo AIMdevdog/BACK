@@ -791,10 +791,14 @@ io.on("connection", function (socket) {
   );
 
   socket.on("consumer-resume", async ({ serverConsumerId }) => {
-    const { consumer } = consumers.find(
-      (consumerData) => consumerData.consumer.id === serverConsumerId
-    );
-    await consumer.resume();
+    try {
+      const { consumer } =  consumers.find(
+        (consumerData) => consumerData.consumer.id === serverConsumerId
+      );
+      await consumer?.resume();
+    } catch(e) {
+      console.log("consumer-resume", e)
+    }
   });
 
   socket.on("leave_Group", (removeSid) => {
