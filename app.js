@@ -298,9 +298,9 @@ io.on("connection", function (socket) {
         id: socket?.id,
         nickname: leaveUser?.nickname,
       });
-      if (peers[socket?.id]) {
-        removeUser(socket?.id);
-      }
+      // if (peers[socket?.id]) {
+      removeUser(socket?.id);
+      // }
       leaveGame(socket);
     } catch(e) {
       console.log('disconnect 소켓', e);
@@ -838,7 +838,6 @@ io.on("connection", function (socket) {
 
       // WebRTC SFU (mediasoup)
       // do some cleanup
-
       consumers = await removeItems(consumers, removeSid, "consumer");
       producers = await removeItems(producers, removeSid, "producer");
       transports = await removeItems(transports, removeSid, "transport");
