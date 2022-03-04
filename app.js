@@ -688,7 +688,7 @@ io.on("connection", function (socket) {
           enableUdp: true,
           enableTcp: true,
           preferUdp: true,
-          initialAvailableOutgoingBitrate,
+          // initialAvailableOutgoingBitrate,
         };
 
         // https://mediasoup.org/documentation/v3/mediasoup/api/#router-createWebRtcTransport
