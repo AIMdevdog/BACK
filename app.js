@@ -298,6 +298,7 @@ io.on("connection", function (socket) {
         id: socket?.id,
         nickname: leaveUser?.nickname,
       });
+      leaveGame(socket);
       // if (peers[socket?.id]) {
       removeUser(socket?.id);
     // }
