@@ -672,6 +672,7 @@ io.on("connection", function (socket) {
       try {
         const { initialAvailableOutgoingBitrate } =
           config.mediasoup.webRtcTransport;
+        console.log(initialAvailableOutgoingBitrate);
         // https://mediasoup.org/documentation/v3/mediasoup/api/#WebRtcTransportOptions
         const webRtcTransport_options = {
           // listenIps: [
@@ -689,7 +690,7 @@ io.on("connection", function (socket) {
           enableUdp: true,
           enableTcp: true,
           preferUdp: true,
-          // initialAvailableOutgoingBitrate,
+          initialAvailableOutgoingBitrate,
         };
 
         // https://mediasoup.org/documentation/v3/mediasoup/api/#router-createWebRtcTransport
@@ -785,7 +786,7 @@ io.on("connection", function (socket) {
           };
 
           // send the parameters to the client
-          callback({ params }, socket.id);
+          callback({ params }, socket.id); //socket.id를 front에서는 안받음...안쓰면 지우는걸로
         }
       } catch (error) {
         console.log(error.message);
