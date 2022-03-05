@@ -484,27 +484,29 @@ io.on("connection", function (socket) {
       socket.to(eachReceiver?.id).emit("ShareAddr", sender); //nickname 추가
     });
   });
+
   socket.on("openDraw", (socketId, drawNum) => {
     const user = charMap[socketId];
-    if(drawUser.findIndex(e => e===user.nickname) === -1){
+    
+    for (let i=0; i < drawUser.length; i++){
+      socket.emit("drawUser", drawUser[i], drawNum);
+    }
+    if (drawUser.findIndex(e => e === user.nickname) === -1) {
       drawUser.push(user.nickname);
     }
+    socket.to(user.roomId).emit("drawUser", user.nickname, drawNum);
+  });
 
+  socket.on("closeDraw", (nickname) => {
+    const user = charMap[socket.id];
     for (let i = 0; i < drawUser.length; i++) {
-      if(drawUser[i] === user.nickname){
-        continue;
-      }
-      io.sockets.in(user.roomId).emit("drawUser", drawUser[i], drawNum);
-    }
-  })
-  socket.on("closeDraw", (nickname)=>{
-    for(let i=0; i<drawUser.length; i++){
-      if(drawUser[i] === nickname){
+      if (drawUser[i] === nickname) {
         drawUser.splice(i, 1);
         break;
       }
     }
-  })
+    socket.to(user.roomId).emit("closeUser", user.nickname);
+  });
 
   socket.on("cursorPosition", (cursorX, cursorY, socketId) => {
     const user = charMap[socketId]
