@@ -101,6 +101,7 @@ let groupObjArr = [
   //   ],
   // },
 ];
+const drawUser = [];
 
 // let groupUsers = [
 //   {
@@ -292,19 +293,20 @@ io.on("connection", function (socket) {
   console.log(`${socket?.id} has joined!`);
   socket.on("disconnect", function (reason) {
     try {
-      console.log(`${socket?.id} has leaved ${reason}!`);
-      const leaveUser = charMap[socket?.id];
-      socket.to(leaveUser?.roomId).emit("leave_user", {
-        id: socket?.id,
-        nickname: leaveUser?.nickname,
+      console.log(`${socket.id} has leaved ${reason}!`);
+      const leaveUser = charMap[socket.id];
+      socket.to(leaveUser.roomId).emit("leave_user", {
+        id: socket.id,
+        nickname: leaveUser.nickname,
       });
+      leaveGame(socket);
       // if (peers[socket?.id]) {
-      removeUser(socket?.id);
-    // }
-  } catch(e) {
-    console.log('disconnect소켓', e);
-  }
-});
+      removeUser(socket.id);
+      // }
+    } catch (e) {
+      console.log('disconnect소켓', e);
+    }
+  });
 
   socket.on("input", function (data) {
     onInput(socket, data);
@@ -482,9 +484,31 @@ io.on("connection", function (socket) {
       socket.to(eachReceiver?.id).emit("ShareAddr", sender); //nickname 추가
     });
   });
+  socket.on("openDraw", (socketId, drawNum) => {
+    const user = charMap[socketId];
+    if(drawUser.findIndex(e => e===user.nickname) === -1){
+      drawUser.push(user.nickname);
+    }
+
+    for (let i = 0; i < drawUser.length; i++) {
+      if(drawUser[i] === user.nickname){
+        continue;
+      }
+      io.sockets.in(user.roomId).emit("drawUser", drawUser[i], drawNum);
+    }
+  })
+  socket.on("closeDraw", (nickname)=>{
+    for(let i=0; i<drawUser.length; i++){
+      if(drawUser[i] === nickname){
+        drawUser.splice(i, 1);
+        break;
+      }
+    }
+  })
 
   socket.on("cursorPosition", (cursorX, cursorY, socketId) => {
-    socket.broadcast.emit("shareCursorPosition", cursorX, cursorY, charMap[socketId].nickname);
+    const user = charMap[socketId]
+    socket.to(user.roomId).emit("shareCursorPosition", cursorX, cursorY, user.nickname);
   });
 
   socket.on("createWebRtcTransport", async ({ consumer }, callback) => {
