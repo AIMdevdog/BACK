@@ -147,11 +147,11 @@ app.use(function (err, req, res, next) {
 });
 
 // httpServer.listen(process.env.PORT || 8000, () => {
-//  console.log(`Server running on ${PORT}`);
+//   console.log(`Server running on ${PORT}`);
 // });
 
 httpsServer.listen(process.env.PORT || 8000, () => {
-   console.log(`Server running on ${PORT}`);
+  console.log(`Server running on ${PORT}`);
 });
 
 class GameObject {
@@ -299,6 +299,7 @@ io.on("connection", function (socket) {
         id: socket.id,
         nickname: leaveUser.nickname,
       });
+      socket.to(leaveUser?.roomId).emit("remove_reduplication", socket?.id);
       leaveGame(socket);
       // if (peers[socket?.id]) {
       removeUser(socket.id);
@@ -697,8 +698,9 @@ io.on("connection", function (socket) {
   const createWebRtcTransport = async (router) => {
     return new Promise(async (resolve, reject) => {
       try {
-        // const { initialAvailableOutgoingBitrate } =
-        //   config.mediasoup.webRtcTransport;
+        const { initialAvailableOutgoingBitrate } =
+          config.mediasoup.webRtcTransport;
+        console.log(initialAvailableOutgoingBitrate);
         // https://mediasoup.org/documentation/v3/mediasoup/api/#WebRtcTransportOptions
         const webRtcTransport_options = {
           // listenIps: [
@@ -716,7 +718,7 @@ io.on("connection", function (socket) {
           enableUdp: true,
           enableTcp: true,
           preferUdp: true,
-          // initialAvailableOutgoingBitrate,
+          initialAvailableOutgoingBitrate,
         };
 
         // https://mediasoup.org/documentation/v3/mediasoup/api/#router-createWebRtcTransport
@@ -811,7 +813,7 @@ io.on("connection", function (socket) {
           };
 
           // send the parameters to the client
-          callback({ params }, socket.id);
+          callback({ params }, socket.id); //socket.id를 front에서는 안받음...안쓰면 지우는걸로
         }
       } catch (error) {
         console.log(error.message);
@@ -837,6 +839,7 @@ io.on("connection", function (socket) {
 
   socket.on("leave_Group", (removeSid) => {
     console.log("그룹을 나가는 유저의 sid = ", removeSid);
+    socket.to
     // 그룹 넘버 초기화
     removeUser(removeSid);
   });
@@ -850,7 +853,7 @@ io.on("connection", function (socket) {
           // 거리가 멀어질 player의 Sid로 화상통화 그룹 정보에 저장된 동일한 Sid를 찾아서 그룹에서 삭제해준다
           if (removeSid === groupObjArr[i].users[j].socketId) {
             findGroupName = groupObjArr[i].groupName;
-            socket.leave(groupObjArr[i].groupName); //  socket Room 에서 삭제
+            socket.leave(findGroupName); //  socket Room 에서 삭제
             // console.log("socket에서 잘 삭제됐는지?", socket.rooms);
             console.log(
               `[server] groupObjArr[${i}].users[${j}]를 삭제`,
