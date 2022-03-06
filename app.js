@@ -511,14 +511,15 @@ io.on("connection", function (socket) {
     socket.to(user.roomId).emit("drawUser", user.nickname, drawNum);
   });
 
-  socket.on("closeDraw", (nickname) => {
+  socket.on("closeDraw", (nickname, drawNum) => {
     const user = charMap[socket.id];
-    for (let i = 0; i < drawUser.length; i++) {
-      if (drawUser[i] === nickname) {
-        drawUser.splice(i, 1);
-        break;
+
+    for (let i = 0; i < drawUser[drawNum].length; i++) {
+      if (drawUser[drawNum][i] === nickname){
+        drawUser[drawNum].splice(i, 1);
       }
     }
+    
     socket.to(user.roomId).emit("closeUser", user.nickname);
   });
 
