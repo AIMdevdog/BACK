@@ -101,7 +101,7 @@ let groupObjArr = [
   //   ],
   // },
 ];
-const drawUser = [];
+const drawUser = {1:[], 2:[]};
 
 // let groupUsers = [
 //   {
@@ -199,6 +199,17 @@ function handler(req, res) {
     res.end(data);
   });
 }
+function removeDrawUser(nickname){
+  Object.values(drawUser).forEach((users)=>{
+    for(let i = 0; i < users.length; i++){
+      if(users[i] === nickname){
+        users.splice(i, 1);
+        break;
+      }
+    }
+  })
+}
+
 
 function makeGame(socket, roomId) {
   console.log("makeGame func called");
@@ -303,6 +314,8 @@ io.on("connection", function (socket) {
       leaveGame(socket);
       // if (peers[socket?.id]) {
       removeUser(socket.id);
+
+      removeDrawUser(leaveUser.nickname);
       // }
     } catch (e) {
       console.log('disconnect소켓', e);
@@ -489,11 +502,11 @@ io.on("connection", function (socket) {
   socket.on("openDraw", (socketId, drawNum) => {
     const user = charMap[socketId];
 
-    for (let i = 0; i < drawUser.length; i++) {
-      socket.emit("drawUser", drawUser[i], drawNum);
+    for (let i = 0; i < drawUser[drawNum].length; i++) {
+      socket.emit("drawUser", drawUser[drawNum][i], drawNum);
     }
-    if (drawUser.findIndex(e => e === user.nickname) === -1) {
-      drawUser.push(user.nickname);
+    if (drawUser[drawNum].findIndex(e => e === user.nickname) === -1) {
+      drawUser[drawNum].push(user.nickname);
     }
     socket.to(user.roomId).emit("drawUser", user.nickname, drawNum);
   });
