@@ -298,6 +298,7 @@ io.on("connection", function (socket) {
         id: socket?.id,
         nickname: leaveUser?.nickname,
       });
+      socket.to(leaveUser?.roomId).emit("remove_reduplication", socket?.id);
       leaveGame(socket);
       // if (peers[socket?.id]) {
       removeUser(socket?.id);
@@ -812,6 +813,7 @@ io.on("connection", function (socket) {
 
   socket.on("leave_Group", (removeSid) => {
     console.log("그룹을 나가는 유저의 sid = ", removeSid);
+    socket.to
     // 그룹 넘버 초기화
     removeUser(removeSid);
   });
@@ -825,7 +827,7 @@ io.on("connection", function (socket) {
           // 거리가 멀어질 player의 Sid로 화상통화 그룹 정보에 저장된 동일한 Sid를 찾아서 그룹에서 삭제해준다
           if (removeSid === groupObjArr[i].users[j].socketId) {
             findGroupName = groupObjArr[i].groupName;
-            socket.leave(groupObjArr[i].groupName); //  socket Room 에서 삭제
+            socket.leave(findGroupName); //  socket Room 에서 삭제
             // console.log("socket에서 잘 삭제됐는지?", socket.rooms);
             console.log(
               `[server] groupObjArr[${i}].users[${j}]를 삭제`,
