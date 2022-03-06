@@ -245,7 +245,7 @@ function leaveGame(socket) {
 
 function onInput(socket, data) {
   let user = charMap[socket.id];
-  user.pushInput(data);
+  user?.pushInput(data);
 }
 
 function updateGame() {
