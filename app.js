@@ -504,8 +504,8 @@ io.on("connection", function (socket) {
     for (let i = 0; i < drawUser[drawNum]?.length; i++) {
       socket.emit("drawUser", drawUser[drawNum][i], drawNum);
     }
-    if (drawUser[drawNum].findIndex(e => e === user.nickname) === -1) {
-      drawUser[drawNum].push(user.nickname);
+    if (drawUser[drawNum]?.findIndex(e => e === user.nickname) === -1) {
+      drawUser[drawNum]?.push(user.nickname);
     }
     socket.to(user.roomId).emit("drawUser", user.nickname, drawNum);
   });
@@ -515,9 +515,9 @@ io.on("connection", function (socket) {
     for (let i = 0; i < drawUser[drawNum]?.length; i++) {
       if (drawUser[drawNum][i] === nickname) {
         drawUser[drawNum].splice(i, 1);
+        break;
       }
     }
-
     socket.to(user.roomId).emit("closeUser", user.nickname);
   });
 
