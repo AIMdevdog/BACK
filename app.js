@@ -25,8 +25,8 @@ const app = express();
 const PORT = 8000;
 
 const options = {
-   key: fs.readFileSync(config.sslKey),
-   cert: fs.readFileSync(config.sslCrt),
+  key: fs.readFileSync(config.sslKey),
+  cert: fs.readFileSync(config.sslCrt),
 };
 
 // const httpServer = http.createServer(app);
@@ -37,13 +37,13 @@ const options = {
 //  },
 // });
 
- const httpsServer = https.createServer(options, app);
- const io = require("socket.io")(httpsServer, {
-   cors: {
-     origin: ["http://localhost:3000", "https://dev-team-aim.com"],
-     credentials: true,
-   },
- });
+const httpsServer = https.createServer(options, app);
+const io = require("socket.io")(httpsServer, {
+  cors: {
+    origin: ["http://localhost:3000", "https://dev-team-aim.com"],
+    credentials: true,
+  },
+});
 
 // WebRTC SFU (mediasoup)
 let worker;
@@ -101,7 +101,7 @@ let groupObjArr = [
   //   ],
   // },
 ];
-const drawUser = {1:[], 2:[]};
+const drawUser = { 1: [], 2: [] };
 
 // let groupUsers = [
 //   {
@@ -199,10 +199,10 @@ function handler(req, res) {
     res.end(data);
   });
 }
-function removeDrawUser(nickname){
-  Object.values(drawUser).forEach((users)=>{
-    for(let i = 0; i < users.length; i++){
-      if(users[i] === nickname){
+function removeDrawUser(nickname) {
+  Object.values(drawUser).forEach((users) => {
+    for (let i = 0; i < users.length; i++) {
+      if (users[i] === nickname) {
         users.splice(i, 1);
         break;
       }
@@ -501,8 +501,7 @@ io.on("connection", function (socket) {
 
   socket.on("openDraw", (socketId, drawNum) => {
     const user = charMap[socketId];
-
-    for (let i = 0; i < drawUser[drawNum].length; i++) {
+    for (let i = 0; i < drawUser[drawNum]?.length; i++) {
       socket.emit("drawUser", drawUser[drawNum][i], drawNum);
     }
     if (drawUser[drawNum].findIndex(e => e === user.nickname) === -1) {
@@ -513,13 +512,12 @@ io.on("connection", function (socket) {
 
   socket.on("closeDraw", (nickname, drawNum) => {
     const user = charMap[socket.id];
-
-    for (let i = 0; i < drawUser[drawNum].length; i++) {
-      if (drawUser[drawNum][i] === nickname){
+    for (let i = 0; i < drawUser[drawNum]?.length; i++) {
+      if (drawUser[drawNum][i] === nickname) {
         drawUser[drawNum].splice(i, 1);
       }
     }
-    
+
     socket.to(user.roomId).emit("closeUser", user.nickname);
   });
 
