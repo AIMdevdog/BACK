@@ -479,16 +479,16 @@ io.on("connection", function (socket) {
     return router1;
   };
 
-  socket.on("ArtsAddr", (sender, receivers) => {
+  socket.on("ArtsAddr", (sender, receivers, drawNum) => {
     receivers.forEach((eachReceiver) => {
-      socket.to(eachReceiver?.id).emit("ShareAddr", sender); //nickname 추가
+      socket.to(eachReceiver?.id).emit("ShareAddr", sender, drawNum); //nickname 추가
     });
   });
 
   socket.on("openDraw", (socketId, drawNum) => {
     const user = charMap[socketId];
-    
-    for (let i=0; i < drawUser.length; i++){
+
+    for (let i = 0; i < drawUser.length; i++) {
       socket.emit("drawUser", drawUser[i], drawNum);
     }
     if (drawUser.findIndex(e => e === user.nickname) === -1) {
@@ -616,9 +616,11 @@ io.on("connection", function (socket) {
       try {
         // console.log(`DTLS PARAMS: ${dtlsParameters}`)
         const consumerTransport = await transports.find(
-          (transportData) =>
-            transportData.consumer &&
-            transportData.transport.id == serverConsumerTransportId
+          (transportData) => {
+            console.log(transportData);
+            return (transportData.consumer &&
+              transportData.transport.id == serverConsumerTransportId)
+          }
         )?.transport;
         await consumerTransport.connect({ dtlsParameters });
       } catch (e) {
@@ -751,7 +753,6 @@ io.on("connection", function (socket) {
       },
       callback
     ) => {
-      console.log(socket.id);
       try {
         const { roomName } = peers[socket.id];
         const router = rooms[roomName].router;
