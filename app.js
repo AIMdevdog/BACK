@@ -25,25 +25,25 @@ const app = express();
 const PORT = 8000;
 
 const options = {
-  key: fs.readFileSync(config.sslKey),
-  cert: fs.readFileSync(config.sslCrt),
+//   key: fs.readFileSync(config.sslKey),
+//   cert: fs.readFileSync(config.sslCrt),
 };
 
-// const httpServer = http.createServer(app);
-// const io = require("socket.io")(httpServer, {
-//   cors: {
-//     origin: ["http://localhost:3000", "https://dev-team-aim.com"],
-//     credentials: true,
-//   },
-// });
-
-const httpsServer = https.createServer(options, app);
-const io = require("socket.io")(httpsServer, {
+const httpServer = http.createServer(app);
+const io = require("socket.io")(httpServer, {
   cors: {
     origin: ["http://localhost:3000", "https://dev-team-aim.com"],
     credentials: true,
   },
 });
+
+// const httpsServer = https.createServer(options, app);
+// const io = require("socket.io")(httpsServer, {
+//   cors: {
+//     origin: ["http://localhost:3000", "https://dev-team-aim.com"],
+//     credentials: true,
+//   },
+// });
 
 // WebRTC SFU (mediasoup)
 let worker;
@@ -146,13 +146,13 @@ app.use(function (err, req, res, next) {
   res.render("error");
 });
 
-// httpServer.listen(process.env.PORT || 8000, () => {
-//   console.log(`Server running on ${PORT}`);
-// });
-
-httpsServer.listen(process.env.PORT || 8000, () => {
+httpServer.listen(process.env.PORT || 8000, () => {
   console.log(`Server running on ${PORT}`);
 });
+
+// httpsServer.listen(process.env.PORT || 8000, () => {
+//   console.log(`Server running on ${PORT}`);
+// });
 
 class GameObject {
   constructor(socket) {
@@ -315,8 +315,9 @@ io.on("connection", function (socket) {
   socket.emit("join_user");
 
   socket.on("send_user_info", function (data) {
-    const { src, x, y, nickname, roomId } = data;
-    socket.join(roomId);
+    console.log("왔니?")
+    const { src, x, y, nickname, roomId, roomNum } = data;
+    socket.join(roomId); 
     let newUser;
     if (roomObjArr[roomId]) {
       newUser = joinGame(socket, roomId);
@@ -333,8 +334,17 @@ io.on("connection", function (socket) {
       newUser.nickname = nickname;
       newUser.roomId = roomId;
     }
-
+    // console.log(typeof(roomNum), roomNum)
     charMap[socket.id] = newUser;
+    if (roomNum === 2) { //room2/28
+      if ( roomObjArr[roomId].length === 1) { 
+        makeGroup(socket)
+      } else {
+        const user = roomObjArr[roomId][0];
+        // console.log(user.groupNumber);
+        joinGroup(user.groupNumber, socket, nickname)
+      }
+    }
     const gameGroup = roomObjArr[roomId];
     for (let i = 0; i < gameGroup.length; i++) {
       let user = gameGroup[i];
@@ -839,7 +849,7 @@ io.on("connection", function (socket) {
 
   socket.on("leave_Group", (removeSid) => {
     console.log("그룹을 나가는 유저의 sid = ", removeSid);
-    socket.to
+    socket.to(leaveUser?.roomId).emit("remove_reduplication", socket?.id);
     // 그룹 넘버 초기화
     removeUser(removeSid);
   });
@@ -926,8 +936,10 @@ const removeItems = (items, socketId, type) => {
 function makeGroup(socket) {
   try {
     console.log("makeGroup");
+    const user = charMap[socket.id];
+    user.groupNumber = ++groupName;
     initGroupObj = {
-      groupName: ++groupName,
+      groupName: groupName,
       currentNum: 0,
       users: [
         {
@@ -936,7 +948,10 @@ function makeGroup(socket) {
         },
       ],
     };
+
+    console.log("-----------", groupName)
     groupObjArr.push(initGroupObj);
+    
     socket.join(groupName);
     console.log("join:", groupName);
     socket.emit("accept_join", initGroupObj.groupName);
@@ -955,6 +970,7 @@ function joinGroup(groupName, socket, nickname) {
         `${i} 방 안에 있는 모든 유저의 소켓ID : `,
         groupObjArr[i].users
       );
+      console.log(groupObjArr[i], groupName)
       if (groupObjArr[i].groupName === groupName) {
         // Reject join the room
         // if (groupObjArr[i].users.length >= MAXIMUM) {
