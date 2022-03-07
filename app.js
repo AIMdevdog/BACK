@@ -25,12 +25,20 @@ const app = express();
 const PORT = 8000;
 
 const options = {
-//   key: fs.readFileSync(config.sslKey),
-//   cert: fs.readFileSync(config.sslCrt),
+  key: fs.readFileSync(config.sslKey),
+  cert: fs.readFileSync(config.sslCrt),
 };
 
-const httpServer = http.createServer(app);
-const io = require("socket.io")(httpServer, {
+// const httpServer = http.createServer(app);
+// const io = require("socket.io")(httpServer, {
+//  cors: {
+//    origin: ["http://localhost:3000", "https://dev-team-aim.com"],
+//    credentials: true,
+//  },
+// });
+
+const httpsServer = https.createServer(options, app);
+const io = require("socket.io")(httpsServer, {
   cors: {
     origin: ["http://localhost:3000", "https://dev-team-aim.com"],
     credentials: true,
@@ -101,7 +109,7 @@ let groupObjArr = [
   //   ],
   // },
 ];
-const drawUser = [];
+const drawUser = { 1: [], 2: [] };
 
 // let groupUsers = [
 //   {
@@ -146,13 +154,13 @@ app.use(function (err, req, res, next) {
   res.render("error");
 });
 
-httpServer.listen(process.env.PORT || 8000, () => {
-  console.log(`Server running on ${PORT}`);
-});
-
-// httpsServer.listen(process.env.PORT || 8000, () => {
+// httpServer.listen(process.env.PORT || 8000, () => {
 //   console.log(`Server running on ${PORT}`);
 // });
+
+httpsServer.listen(process.env.PORT || 8000, () => {
+  console.log(`Server running on ${PORT}`);
+});
 
 class GameObject {
   constructor(socket) {
@@ -199,6 +207,17 @@ function handler(req, res) {
     res.end(data);
   });
 }
+function removeDrawUser(nickname) {
+  Object.values(drawUser).forEach((users) => {
+    for (let i = 0; i < users.length; i++) {
+      if (users[i] === nickname) {
+        users.splice(i, 1);
+        break;
+      }
+    }
+  })
+}
+
 
 function makeGame(socket, roomId) {
   console.log("makeGame func called");
@@ -234,7 +253,7 @@ function leaveGame(socket) {
 
 function onInput(socket, data) {
   let user = charMap[socket.id];
-  user.pushInput(data);
+  user?.pushInput(data);
 }
 
 function updateGame() {
@@ -303,6 +322,8 @@ io.on("connection", function (socket) {
       leaveGame(socket);
       // if (peers[socket?.id]) {
       removeUser(socket.id);
+
+      removeDrawUser(leaveUser.nickname);
       // }
     } catch (e) {
       console.log('disconnect소켓', e);
@@ -498,21 +519,20 @@ io.on("connection", function (socket) {
 
   socket.on("openDraw", (socketId, drawNum) => {
     const user = charMap[socketId];
-
-    for (let i = 0; i < drawUser.length; i++) {
-      socket.emit("drawUser", drawUser[i], drawNum);
+    for (let i = 0; i < drawUser[drawNum]?.length; i++) {
+      socket.emit("drawUser", drawUser[drawNum][i], drawNum);
     }
-    if (drawUser.findIndex(e => e === user.nickname) === -1) {
-      drawUser.push(user.nickname);
+    if (drawUser[drawNum]?.findIndex(e => e === user.nickname) === -1) {
+      drawUser[drawNum]?.push(user.nickname);
     }
     socket.to(user.roomId).emit("drawUser", user.nickname, drawNum);
   });
 
-  socket.on("closeDraw", (nickname) => {
+  socket.on("closeDraw", (nickname, drawNum) => {
     const user = charMap[socket.id];
-    for (let i = 0; i < drawUser.length; i++) {
-      if (drawUser[i] === nickname) {
-        drawUser.splice(i, 1);
+    for (let i = 0; i < drawUser[drawNum]?.length; i++) {
+      if (drawUser[drawNum][i] === nickname) {
+        drawUser[drawNum].splice(i, 1);
         break;
       }
     }

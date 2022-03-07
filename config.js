@@ -31,7 +31,7 @@ module.exports = {
     numWorkers: Object.keys(os.cpus()).length,
     worker: {
       rtcMinPort: 2000,
-      rtcMaxPort: 2150,
+      rtcMaxPort: 2999,
       logLevel: "warn",
       logTags: [
         "info",
@@ -79,8 +79,8 @@ module.exports = {
           announcedIp: getLocalIp(), // replace by public IP address
         },
       ],
-      maxIncomingBitrate: 1500000,
-      initialAvailableOutgoingBitrate: 1000000,
+      // maxIncomingBitrate: 1500000,
+      // initialAvailableOutgoingBitrate: 1000000,
     },
   },
 };
