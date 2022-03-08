@@ -869,6 +869,7 @@ io.on("connection", function (socket) {
 
   socket.on("leave_Group", (removeSid) => {
     console.log("그룹을 나가는 유저의 sid = ", removeSid);
+    const leaveUser = charMap[socket.id];
     socket.to(leaveUser?.roomId).emit("remove_reduplication", socket?.id);
     // 그룹 넘버 초기화
     removeUser(removeSid);
