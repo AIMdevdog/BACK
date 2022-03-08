@@ -694,7 +694,7 @@ io.on("connection", function (socket) {
         ];
       }
     });
-    console.log("&&&&&&&&&&&& socket id : ", socket.id);
+    // console.log("&&&&&&&&&&&& socket id : ", socket.id);
     // console.log("^^^^^^^^^^^^^^^^^^ producerList : ", producerList);
     // return the producer list back to the client
     callback(producerList);
@@ -988,7 +988,7 @@ function joinGroup(groupName, socket, nickname) {
         `${i} 방 안에 있는 모든 유저의 소켓ID : `,
         groupObjArr[i].users
       );
-      console.log(groupObjArr[i], groupName)
+      // console.log(groupObjArr[i], groupName)
       if (groupObjArr[i].groupName === groupName) {
         // Reject join the room
         // if (groupObjArr[i].users.length >= MAXIMUM) {
