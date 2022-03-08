@@ -25,25 +25,25 @@ const app = express();
 const PORT = 8000;
 
 const options = {
-  key: fs.readFileSync(config.sslKey),
-  cert: fs.readFileSync(config.sslCrt),
+  // key: fs.readFileSync(config.sslKey),
+  // cert: fs.readFileSync(config.sslCrt),
 };
 
-// const httpServer = http.createServer(app);
-// const io = require("socket.io")(httpServer, {
-//  cors: {
-//    origin: ["http://localhost:3000", "https://dev-team-aim.com"],
-//    credentials: true,
-//  },
-// });
-
-const httpsServer = https.createServer(options, app);
-const io = require("socket.io")(httpsServer, {
-  cors: {
-    origin: ["http://localhost:3000", "https://dev-team-aim.com"],
-    credentials: true,
-  },
+const httpServer = http.createServer(app);
+const io = require("socket.io")(httpServer, {
+ cors: {
+   origin: ["http://localhost:3000", "https://dev-team-aim.com"],
+   credentials: true,
+ },
 });
+
+// const httpsServer = https.createServer(options, app);
+// const io = require("socket.io")(httpsServer, {
+//   cors: {
+//     origin: ["http://localhost:3000", "https://dev-team-aim.com"],
+//     credentials: true,
+//   },
+// });
 
 
 // WebRTC SFU (mediasoup)
@@ -51,7 +51,7 @@ let worker;
 let rooms = {}; // { roomName1: { Router, rooms: [ sicketId1, ... ] }, ...}
 let peers = {}; // { socketId1: { roomName1, socket, transports = [id1, id2,] }, producers = [id1, id2,] }, consumers = [id1, id2,], peerDetails }, ...}
 let transports = []; // [ { socketId1, roomName1, transport, consumer }, ... ]
-let producers = []; // [ { socketId1, roomName1, producer, }, ... ]
+let producers = []; // [ { socketId1, roomName1, producer, kind}, ... ]
 let consumers = []; // [ { socketId1, roomName1, consumer, }, ... ]
 
 // ------------------------
@@ -147,13 +147,13 @@ app.use(function (err, req, res, next) {
   res.render("error");
 });
 
-// httpServer.listen(process.env.PORT || 8000, () => {
-//   console.log(`Server running on ${PORT}`);
-// });
-
-httpsServer.listen(process.env.PORT || 8000, () => {
+httpServer.listen(process.env.PORT || 8000, () => {
   console.log(`Server running on ${PORT}`);
 });
+
+// httpsServer.listen(process.env.PORT || 8000, () => {
+//   console.log(`Server running on ${PORT}`);
+// });
 
 class GameObject {
   constructor(socket) {
@@ -286,7 +286,7 @@ const createWorker = async () => {
     rtcMinPort: config.mediasoup.worker.rtcMinPort,
     rtcMaxPort: config.mediasoup.worker.rtcMaxPort, // connection 개수 150개까지 가능 (user수가 n일 때 connection 개수 = n^2)
   });
-  console.log(`worker pid ${worker.pid}`);
+  // console.log(`worker pid ${worker.pid}`);
 
   worker.on("died", (error) => {
     // This implies something serious happened, so kill the application
@@ -329,7 +329,6 @@ io.on("connection", function (socket) {
   socket.emit("join_user");
 
   socket.on("send_user_info", function (data) {
-    console.log("왔니?")
     const { src, x, y, nickname, roomId, roomNum } = data;
     socket.join(roomId); 
     let newUser;
@@ -468,7 +467,7 @@ io.on("connection", function (socket) {
         isAdmin: false, // Is this Peer the Admin?
       },
     };
-    console.log("*************** peers : ", peers);
+    // console.log("*************** peers : ", peers);
 
     // get Router RTP Capabilities
     const rtpCapabilities = router1.rtpCapabilities;
@@ -543,7 +542,7 @@ io.on("connection", function (socket) {
       const roomName = peers[socket.id].roomName;
       // get Router (Room) object this peer is in based on RoomName
       const router = rooms[roomName].router;
-
+      console.log(`socket id ${socket.id}가 consumer ${consumer}, createWebRTCTransport요청`)
       createWebRtcTransport(router).then(
         async (transport) => {
           callback({
@@ -607,14 +606,14 @@ io.on("connection", function (socket) {
           rtpParameters,
         });
 
-        console.log("%%%%%%%%%%%%%%%%% producerId : ", producer.id);
+        console.log("%%%%%%%%%%%%%%%%% producerId : ", producer.id, kind);
 
         // add producer to the producers array
         const { roomName } = peers[socket.id];
-
-        await addProducer(producer, roomName);
-
-        await informConsumers(roomName, socket.id, producer.id);
+        console.log(producers.length)
+        await addProducer(producer, roomName, kind);
+        console.log(producers.length)
+        await informConsumers(roomName, socket.id, producer.id, kind);
 
         // console.log('Producer ID: ', producer.id, producer.kind);
 
@@ -627,6 +626,7 @@ io.on("connection", function (socket) {
         callback({
           id: producer.id,
           producersExist: producers.length > 1 ? true : false,
+          kind,
         });
       } catch (e) {
         console.log("transport-produce소켓", e);
@@ -641,7 +641,7 @@ io.on("connection", function (socket) {
         // console.log(`DTLS PARAMS: ${dtlsParameters}`)
         const consumerTransport = await transports.find(
           (transportData) => {
-            console.log(transportData);
+            // console.log(transportData);
             return (transportData.consumer &&
               transportData.transport.id == serverConsumerTransportId)
           }
@@ -664,25 +664,26 @@ io.on("connection", function (socket) {
     };
   };
 
-  const addProducer = (producer, roomName) => {
-    producers = [...producers, { socketId: socket.id, producer, roomName }];
+  const addProducer = (producer, roomName, kind) => {
+    producers = [...producers, { socketId: socket.id, producer, roomName, kind}];
 
     peers[socket.id] = {
       ...peers[socket.id],
       producers: [...peers[socket.id].producers, producer.id],
     };
   };
-
-  socket.on("getProducers", (callback) => {
+  socket.on("getProducers", ({kind}, callback) => {
     //return all producer transports
     // consumer가 호출
+    console.log(kind);
     const { roomName } = peers[socket.id];
 
     let producerList = [];
     producers.forEach((producerData) => {
       if (
         producerData.socketId !== socket.id &&
-        producerData.roomName === roomName
+        producerData.roomName === roomName &&
+        producerData.kind === kind 
       ) {
         producerList = [
           ...producerList,
@@ -699,16 +700,18 @@ io.on("connection", function (socket) {
     callback(producerList);
   });
 
-  const informConsumers = (roomName, socketId, id) => {
+  const informConsumers = (roomName, socketId, id, kind) => {
     // console.log(`just joined, id ${id} ${roomName}, ${socketId}`)
     // A new producer just joined
     // let all consumers to consume this producer
     producers.forEach((producerData) => {
       if (
         producerData.socketId !== socketId &&
-        producerData.roomName === roomName
+        producerData.roomName === roomName &&
+        producerData.kind === kind
       ) {
         const producerSocket = peers[producerData.socketId].socket;
+        console.log(`inform 몇 번: socket.id ${socket.id}` );
         // use socket to send producer id to producer
         producerSocket.emit("new-producer", {
           producerId: id,
@@ -723,7 +726,6 @@ io.on("connection", function (socket) {
       try {
         const { initialAvailableOutgoingBitrate } =
           config.mediasoup.webRtcTransport;
-        console.log(initialAvailableOutgoingBitrate);
         // https://mediasoup.org/documentation/v3/mediasoup/api/#WebRtcTransportOptions
         const webRtcTransport_options = {
           // listenIps: [
@@ -892,11 +894,13 @@ io.on("connection", function (socket) {
               // for 빈 소켓 룸([]) 삭제 1
               deleted.push(i);
             }
+            // console.log(groupObjArr[i].users);
             break;
           }
         }
       }
-      console.log(groupObjArr);
+      
+      // console.log(groupObjArr);
       for (let i = 0; i < deleted.length; i++) {
         // for 빈 소켓 룸([]) 삭제 2
         groupObjArr.splice(deleted[i], 1);
@@ -907,9 +911,9 @@ io.on("connection", function (socket) {
       consumers = await removeItems(consumers, removeSid, "consumer");
       producers = await removeItems(producers, removeSid, "producer");
       transports = await removeItems(transports, removeSid, "transport");
-      console.log(
-        `consumers ${consumers}, producers ${producers}, transports ${transports}`
-      );
+      // console.log(
+      //   `consumers ${consumers}, producers ${producers}, transports ${transports}`
+      // );
       const roomName = peers[removeSid].roomName;
       delete peers[removeSid];
 
@@ -967,7 +971,7 @@ function makeGroup(socket) {
     groupObjArr.push(initGroupObj);
     
     socket.join(groupName);
-    console.log("join:", groupName);
+    // console.log("join:", groupName);
     socket.emit("accept_join", initGroupObj.groupName);
     return groupName;
   } catch (e) {
