@@ -16,6 +16,9 @@ module.exports = class Aim_board extends Sequelize.Model {
         contents: {
           type: Sequelize.STRING(600),
         },
+        status: {
+          type: Sequelize.INTEGER(11)
+        }
       },
       {
         sequelize,
@@ -32,11 +35,11 @@ module.exports = class Aim_board extends Sequelize.Model {
   static associate(db) {
     db.Aim_board.belongsTo(db.Aim_user_room, {
       foreignKey: "roomId",
-      sourceKey: "id",
+      primaryKey: "id",
     });
     db.Aim_board.belongsTo(db.Aim_user_info, {
       foreignKey: "userId",
-      sourceKey: "id",
+      primaryKey: "id",
     });
   }
 };

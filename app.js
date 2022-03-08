@@ -18,6 +18,7 @@ const usersRouter = require("./routes/users");
 const roomRouter = require("./routes/room");
 const characterRouter = require("./routes/characters");
 const userRoomRouter = require("./routes/userRoom");
+const boardRouter = require("./routes/board");
 
 const config = require("./config");
 
@@ -128,6 +129,7 @@ app.use("/users", usersRouter);
 app.use("/room", roomRouter);
 app.use("/character", characterRouter);
 app.use("/userRoom", userRoomRouter);
+app.use("/board", boardRouter);
 app.use("/", indexRouter);
 
 // catch 404 and forward to error handler
