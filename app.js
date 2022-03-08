@@ -618,6 +618,7 @@ io.on("connection", function (socket) {
 
         // add producer to the producers array
         const { roomName } = peers[socket.id];
+        
 
         await addProducer(producer, roomName);
 
