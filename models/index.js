@@ -7,6 +7,7 @@ const Aim_user_info = require("./aim_user_info");
 const Aim_map_images = require("./aim_map_images");
 const Aim_character_images = require("./aim_character_image");
 const Aim_user_room = require("./aim_user_room");
+const Aim_board = require("./aim_board");
 // const basename = path.basename(__filename);
 const env = process.env.NODE_ENV || "development";
 const config = require("../config/config")[env];
@@ -50,14 +51,17 @@ db.Aim_user_info = Aim_user_info;
 db.Aim_map_images = Aim_map_images;
 db.Aim_character_images = Aim_character_images;
 db.Aim_user_room = Aim_user_room;
+db.Aim_board = Aim_board;
 
 Aim_user_info.init(sequelize);
 Aim_map_images.init(sequelize);
 Aim_character_images.init(sequelize);
 Aim_user_room.init(sequelize);
+Aim_board.init(sequelize);
 
 // Aim_user_info.associate(db);
 // Aim_map_images.associate(db);
 Aim_user_room.associate(db);
+Aim_board.associate(db);
 
 module.exports = db;
