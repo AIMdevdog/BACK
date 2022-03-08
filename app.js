@@ -468,7 +468,7 @@ io.on("connection", function (socket) {
         isAdmin: false, // Is this Peer the Admin?
       },
     };
-    console.log("*************** peers : ", peers);
+    // console.log("*************** peers : ", peers);
 
     // get Router RTP Capabilities
     const rtpCapabilities = router1.rtpCapabilities;
@@ -607,7 +607,7 @@ io.on("connection", function (socket) {
           rtpParameters,
         });
 
-        console.log("%%%%%%%%%%%%%%%%% producerId : ", producer.id);
+        // console.log("%%%%%%%%%%%%%%%%% producerId : ", producer.id);
 
         // add producer to the producers array
         const { roomName } = peers[socket.id];
@@ -641,7 +641,7 @@ io.on("connection", function (socket) {
         // console.log(`DTLS PARAMS: ${dtlsParameters}`)
         const consumerTransport = await transports.find(
           (transportData) => {
-            console.log(transportData);
+            // console.log(transportData);
             return (transportData.consumer &&
               transportData.transport.id == serverConsumerTransportId)
           }
@@ -693,7 +693,7 @@ io.on("connection", function (socket) {
         ];
       }
     });
-    console.log("&&&&&&&&&&&& socket id : ", socket.id);
+    // console.log("&&&&&&&&&&&& socket id : ", socket.id);
     // console.log("^^^^^^^^^^^^^^^^^^ producerList : ", producerList);
     // return the producer list back to the client
     callback(producerList);
@@ -723,7 +723,7 @@ io.on("connection", function (socket) {
       try {
         const { initialAvailableOutgoingBitrate } =
           config.mediasoup.webRtcTransport;
-        console.log(initialAvailableOutgoingBitrate);
+        // console.log(initialAvailableOutgoingBitrate);
         // https://mediasoup.org/documentation/v3/mediasoup/api/#WebRtcTransportOptions
         const webRtcTransport_options = {
           // listenIps: [
@@ -896,7 +896,7 @@ io.on("connection", function (socket) {
           }
         }
       }
-      console.log(groupObjArr);
+      // console.log(groupObjArr);
       for (let i = 0; i < deleted.length; i++) {
         // for 빈 소켓 룸([]) 삭제 2
         groupObjArr.splice(deleted[i], 1);
@@ -984,7 +984,7 @@ function joinGroup(groupName, socket, nickname) {
         `${i} 방 안에 있는 모든 유저의 소켓ID : `,
         groupObjArr[i].users
       );
-      console.log(groupObjArr[i], groupName)
+      // console.log(groupObjArr[i], groupName)
       if (groupObjArr[i].groupName === groupName) {
         // Reject join the room
         // if (groupObjArr[i].users.length >= MAXIMUM) {
