@@ -25,7 +25,7 @@ router.get("/read/:roomId", async (req, res) => {
         // }],
         where: {
             roomId,
-            stauts: 1
+            status: 1
         },
         include: [Aim_user_info, Aim_user_room]
         
