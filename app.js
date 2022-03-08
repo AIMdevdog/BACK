@@ -45,13 +45,6 @@ const io = require("socket.io")(httpsServer, {
   },
 });
 
-// const httpsServer = https.createServer(options, app);
-// const io = require("socket.io")(httpsServer, {
-//   cors: {
-//     origin: ["http://localhost:3000", "https://dev-team-aim.com"],
-//     credentials: true,
-//   },
-// });
 
 // WebRTC SFU (mediasoup)
 let worker;
@@ -869,6 +862,7 @@ io.on("connection", function (socket) {
 
   socket.on("leave_Group", (removeSid) => {
     console.log("그룹을 나가는 유저의 sid = ", removeSid);
+    const leaveUser = charMap[removeSid] 
     socket.to(leaveUser?.roomId).emit("remove_reduplication", socket?.id);
     // 그룹 넘버 초기화
     removeUser(removeSid);
