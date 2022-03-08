@@ -15,20 +15,16 @@ const router = express.Router();
 
 // router.post("/test", ())
 
-router.get("/read/:roomId", async (req, res) => {
+router.get("/read/:roomId", authUser, async (req, res) => {
   const { roomId } = req.params;
   try {
     const boards = await Aim_board.findAll({
-        // include: [{ // 캐릭터 url이나 닉네임 가져올 때 join
-        //     model: Aim_user_info, 
-        //     attributes: [""],
-        // }],
-        where: {
-            roomId,
-            stauts: 1
-        },
-        include: [Aim_user_info, Aim_user_room]
-        
+      where: {
+        roomId: parseInt(roomId),
+        status: 1,
+      },
+      include: [Aim_user_info, Aim_user_room],
+      order: [["createdAt", "DESC"]],
     });
     if (boards) {
       return res.json({ msg: "방명록 불러오기 성공.", data: boards });
@@ -42,8 +38,8 @@ router.get("/read/:roomId", async (req, res) => {
 
 router.post("/create", authUser, async (req, res) => {
   try {
-    const {accessToken} = req.user;
-    const { contents, roomId } = req.body;
+    const { accessToken } = req.user;
+    const { roomId, contents } = req.body;
     const findUser = await Aim_user_info.findOne({
       where: {
         accessToken,
@@ -51,9 +47,9 @@ router.post("/create", authUser, async (req, res) => {
     });
     if (findUser) {
       const result = await Aim_board.create({
-          roomId,
-          userId : findUser.id,
-          contents,
+        roomId,
+        userId: findUser.id,
+        contents,
       });
       if (result) {
         return res.json({ msg: "방명록 생성." });
@@ -66,7 +62,6 @@ router.post("/create", authUser, async (req, res) => {
   }
 });
 
-
 router.put("/update", authUser, async (req, res) => {
   try {
     const { boardId, contents } = req.body;
@@ -74,34 +69,18 @@ router.put("/update", authUser, async (req, res) => {
       where: {
         id: boardId,
       },
-      // include: [Aim_user_info]
-    })
+    });
     const result = await findBoard.update({
       contents,
-    })
-    if (result) { 
+    });
+    if (result) {
       return res.json({ msg: "업데이트 성공." });
     } else {
-      return res.status(400)
+      return res.status(400);
     }
-
   } catch (e) {
     console.log(e);
   }
-
-    
-    // const findCreatedUser = await Aim_board.findOne({
-    //   where: {
-    //     ,
-    //   },
-    // });
-    // if (findUser === ) {
-    //   const updateContents = await Aim_board.update({
-    //       contents,
-    //   });
-    //   res.json(updateContents);
-    // }
-
 });
 
 router.post("/delete", authUser, async (req, res) => {
@@ -110,27 +89,23 @@ router.post("/delete", authUser, async (req, res) => {
     const result = await Aim_board.findOne({
       where: {
         id: boardId,
-      }
-    })
-    if(result) {
+      },
+    });
+    if (result) {
       const r = result.update({
-        status: 0
-      })
+        status: 0,
+      });
       if (r) {
-        return res.json({ msg: "삭제 성공."})
+        return res.json({ msg: "삭제 성공." });
       } else {
         return res.status(400);
       }
     } else {
-      res.json({msg: "방명록을 찾을 수 없습니다."})
+      res.json({ msg: "방명록을 찾을 수 없습니다." });
     }
-    
   } catch (e) {
     console.log(e);
   }
 });
-
-
-
 
 module.exports = router;
