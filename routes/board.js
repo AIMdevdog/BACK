@@ -39,11 +39,7 @@ router.get("/read/:roomId", authUser, async (req, res) => {
 router.post("/create", authUser, async (req, res) => {
   try {
     const { accessToken } = req.user;
-<<<<<<< HEAD
     const { roomId, contents } = req.body;
-=======
-    const { contents, roomId } = req.body;
->>>>>>> 619d882a66d4dcb1565f075f5750299e45ca7fde
     const findUser = await Aim_user_info.findOne({
       where: {
         accessToken,
