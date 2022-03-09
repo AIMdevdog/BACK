@@ -31,10 +31,10 @@ const options = {
 
 // const httpServer = http.createServer(app);
 // const io = require("socket.io")(httpServer, {
-//  cors: {
-//    origin: ["http://localhost:3000", "https://dev-team-aim.com"],
-//    credentials: true,
-//  },
+//   cors: {
+//     origin: ["http://localhost:3000", "https://dev-team-aim.com"],
+//     credentials: true,
+//   },
 // });
 
 const httpsServer = https.createServer(options, app);
@@ -102,7 +102,7 @@ let groupObjArr = [
   //   ],
   // },
 ];
-const drawUser = { 1: [], 2: [] };
+const drawUser = { 1: [], 2: [], 3: [], 4: [], 5: [] };
 
 // let groupUsers = [
 //   {
@@ -160,7 +160,7 @@ class GameObject {
     this.socket = socket;
     this.x = 80;
     this.y = 80;
-    this.direction = [];
+    // this.direction = [];
     this.buffer = [];
     this.src = null;
     this.groupNumber = 0;
@@ -172,21 +172,24 @@ class GameObject {
     return this.socket.id;
   }
   pushInput(data) {
-    this.buffer.push(...data);
+    // console.log(data[4]);
+    this.x = data[data.length - 1].x;
+    this.y = data[data.length - 1].y;
+    this.buffer.push(data);
   }
-  update_location() {
-    const input = this.buffer.shift();
-    // console.log(input)
-    if (this.buffer.length > 0) {
-      this.direction.unshift(input.direction);
-      if (this.x !== input.x) {
-        this.x = input.x;
-      }
-      if (this.y !== input.y) {
-        this.y = input.y;
-      }
-    }
-  }
+  // update_location() {
+  //   const input = this.buffer.shift();
+  //   // console.log(input)
+  //   if (this.buffer.length > 0) {
+  //     this.direction.unshift(input.direction);
+  //     if (this.x !== input.x) {
+  //       this.x = input.x;
+  //     }
+  //     if (this.y !== input.y) {
+  //       this.y = input.y;
+  //     }
+  //   }
+  // }
 }
 
 function handler(req, res) {
@@ -249,33 +252,34 @@ function onInput(socket, data) {
   user?.pushInput(data);
 }
 
-function updateGame() {
-  Object.values(charMap).forEach((object) => {
-    object.update_location();
-  });
-  setTimeout(updateGame, 16);
-}
+// function updateGame() {
+//   Object.values(charMap).forEach((object) => {
+//     object.update_location();
+//   });
+//   setTimeout(updateGame, 16);
+// }
 
 function broadcastState() {
+  let flag = true;
   Object.values(roomObjArr).forEach((gameGroup) => {
     let data = {};
     for (let i = 0; i < gameGroup.length; i++) {
       let character = gameGroup[i];
-      data[i] = {
-        id: character.id,
-        x: character.x,
-        y: character.y,
-        direction: character.direction.shift(),
-        //groupName도 업데이트 필요
-      };
+      data[i] = character.buffer.shift();
+      // data[i] = {
+      //   id: character.id,
+      //   x: character.x,
+      //   y: character.y,
+      //   direction: character.direction.shift(),
+      //   //groupName도 업데이트 필요
+      // };
     }
     io.sockets.in(gameGroup[0].roomId).emit("update_state", data);
   });
-
-  setTimeout(broadcastState, 16);
+  setTimeout(broadcastState, 64);
 }
 
-updateGame();
+// updateGame();
 broadcastState();
 
 // WebRTC SFU (mediasoup)
@@ -331,7 +335,7 @@ io.on("connection", function (socket) {
   socket.on("send_user_info", function (data) {
     console.log("왔니?")
     const { src, x, y, nickname, roomId, roomNum } = data;
-    socket.join(roomId); 
+    socket.join(roomId);
     let newUser;
     if (roomObjArr[roomId]) {
       newUser = joinGame(socket, roomId);
@@ -351,7 +355,7 @@ io.on("connection", function (socket) {
     // console.log(typeof(roomNum), roomNum)
     charMap[socket.id] = newUser;
     if (roomNum === 2) { //room2/28
-      if ( roomObjArr[roomId].length === 1) { 
+      if (roomObjArr[roomId].length === 1) {
         makeGroup(socket)
       } else {
         const user = roomObjArr[roomId][0];
@@ -512,11 +516,11 @@ io.on("connection", function (socket) {
 
   socket.on("openDraw", (socketId, drawNum) => {
     const user = charMap[socketId];
-    for (let i = 0; i < drawUser[drawNum]?.length; i++) {
+    for (let i = 0; i < drawUser[drawNum].length; i++) {
       socket.emit("drawUser", drawUser[drawNum][i], drawNum);
     }
-    if (drawUser[drawNum]?.findIndex(e => e === user.nickname) === -1) {
-      drawUser[drawNum]?.push(user.nickname);
+    if (drawUser[drawNum].findIndex(e => e === user.nickname) === -1) {
+      drawUser[drawNum].push(user.nickname);
     }
     socket.to(user.roomId).emit("drawUser", user.nickname, drawNum);
   });
@@ -862,7 +866,7 @@ io.on("connection", function (socket) {
 
   socket.on("leave_Group", (removeSid) => {
     console.log("그룹을 나가는 유저의 sid = ", removeSid);
-    const leaveUser = charMap[removeSid] 
+    const leaveUser = charMap[removeSid]
     socket.to(leaveUser?.roomId).emit("remove_reduplication", socket?.id);
     // 그룹 넘버 초기화
     removeUser(removeSid);
@@ -965,7 +969,7 @@ function makeGroup(socket) {
 
     console.log("-----------", groupName)
     groupObjArr.push(initGroupObj);
-    
+
     socket.join(groupName);
     console.log("join:", groupName);
     socket.emit("accept_join", initGroupObj.groupName);
