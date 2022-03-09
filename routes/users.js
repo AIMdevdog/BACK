@@ -47,7 +47,8 @@ router.post("/login", async (req, res) => {
             info: "AccessToken",
           },
           privateKey,
-          { expiresIn: "60s" }
+          // { expiresIn: "60s" }
+          { expiresIn: "10d" } //임의로 바꿈
         );
         const refreshToken = jwt.sign(
           {
@@ -55,7 +56,8 @@ router.post("/login", async (req, res) => {
             info: "RefreshToken",
           },
           refreshKey,
-          { expiresIn: "3d" }
+          // { expiresIn: "3d" }
+          { expiresIn: "10d" } //임의로 바꿈
         );
 
         const result = await findUser.update({
@@ -91,7 +93,8 @@ router.get("/refreshToken", async (req, res) => {
         email: req.body.email,
       },
       privateKey,
-      { expiresIn: "60s" }
+      // { expiresIn: "60s" }
+      { expiresIn: "10d" } //임의로 바꿈
     );
 
     if (findUser) {
