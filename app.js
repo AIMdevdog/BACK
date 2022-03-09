@@ -18,33 +18,25 @@ const usersRouter = require("./routes/users");
 const roomRouter = require("./routes/room");
 const characterRouter = require("./routes/characters");
 const userRoomRouter = require("./routes/userRoom");
+const boardRouter = require("./routes/board");
 
 const config = require("./config");
 
 const app = express();
 const PORT = 8000;
 
-const options = {
-  key: fs.readFileSync(config.sslKey),
-  cert: fs.readFileSync(config.sslCrt),
-};
+// const options = {
+//   key: fs.readFileSync(config.sslKey),
+//   cert: fs.readFileSync(config.sslCrt),
+// };
 
-// const httpServer = http.createServer(app);
-// const io = require("socket.io")(httpServer, {
-//   cors: {
-//     origin: ["http://localhost:3000", "https://dev-team-aim.com"],
-//     credentials: true,
-//   },
-// });
-
-const httpsServer = https.createServer(options, app);
-const io = require("socket.io")(httpsServer, {
+const httpServer = http.createServer(app);
+const io = require("socket.io")(httpServer, {
   cors: {
     origin: ["http://localhost:3000", "https://dev-team-aim.com"],
     credentials: true,
   },
 });
-
 
 // WebRTC SFU (mediasoup)
 let worker;
@@ -130,6 +122,7 @@ app.use("/users", usersRouter);
 app.use("/room", roomRouter);
 app.use("/character", characterRouter);
 app.use("/userRoom", userRoomRouter);
+app.use("/board", boardRouter);
 app.use("/", indexRouter);
 
 // catch 404 and forward to error handler
@@ -147,13 +140,13 @@ app.use(function (err, req, res, next) {
   res.render("error");
 });
 
-// httpServer.listen(process.env.PORT || 8000, () => {
-//   console.log(`Server running on ${PORT}`);
-// });
-
-httpsServer.listen(process.env.PORT || 8000, () => {
+httpServer.listen(process.env.PORT || 8000, () => {
   console.log(`Server running on ${PORT}`);
 });
+
+// httpsServer.listen(process.env.PORT || 8000, () => {
+//   console.log(`Server running on ${PORT}`);
+// });
 
 class GameObject {
   constructor(socket) {
@@ -211,9 +204,8 @@ function removeDrawUser(nickname) {
         break;
       }
     }
-  })
+  });
 }
-
 
 function makeGame(socket, roomId) {
   console.log("makeGame func called");
@@ -323,7 +315,7 @@ io.on("connection", function (socket) {
       removeDrawUser(leaveUser.nickname);
       // }
     } catch (e) {
-      console.log('disconnect소켓', e);
+      console.log("disconnect소켓", e);
     }
   });
 
@@ -353,13 +345,14 @@ io.on("connection", function (socket) {
     }
     // console.log(typeof(roomNum), roomNum)
     charMap[socket.id] = newUser;
-    if (roomNum === 2) { //room2/28
+    if (roomNum === 2) {
+      //room2/28
       if (roomObjArr[roomId].length === 1) {
-        makeGroup(socket)
+        makeGroup(socket);
       } else {
         const user = roomObjArr[roomId][0];
         // console.log(user.groupNumber);
-        joinGroup(user.groupNumber, socket, nickname)
+        joinGroup(user.groupNumber, socket, nickname);
       }
     }
     const gameGroup = roomObjArr[roomId];
@@ -518,7 +511,7 @@ io.on("connection", function (socket) {
     for (let i = 0; i < drawUser[drawNum].length; i++) {
       socket.emit("drawUser", drawUser[drawNum][i], drawNum);
     }
-    if (drawUser[drawNum].findIndex(e => e === user.nickname) === -1) {
+    if (drawUser[drawNum].findIndex((e) => e === user.nickname) === -1) {
       drawUser[drawNum].push(user.nickname);
     }
     socket.to(user.roomId).emit("drawUser", user.nickname, drawNum);
@@ -536,8 +529,10 @@ io.on("connection", function (socket) {
   });
 
   socket.on("cursorPosition", (cursorX, cursorY, socketId) => {
-    const user = charMap[socketId]
-    socket.to(user.roomId).emit("shareCursorPosition", cursorX, cursorY, user.nickname);
+    const user = charMap[socketId];
+    socket
+      .to(user.roomId)
+      .emit("shareCursorPosition", cursorX, cursorY, user.nickname);
   });
 
   socket.on("createWebRtcTransport", async ({ consumer }, callback) => {
@@ -546,7 +541,9 @@ io.on("connection", function (socket) {
       const roomName = peers[socket.id].roomName;
       // get Router (Room) object this peer is in based on RoomName
       const router = rooms[roomName].router;
-      console.log(`socket id ${socket.id}가 consumer ${consumer}, createWebRTCTransport요청`)
+      console.log(
+        `socket id ${socket.id}가 consumer ${consumer}, createWebRTCTransport요청`
+      );
       createWebRtcTransport(router).then(
         async (transport) => {
           callback({
@@ -614,9 +611,9 @@ io.on("connection", function (socket) {
 
         // add producer to the producers array
         const { roomName } = peers[socket.id];
-        console.log(producers.length)
+        console.log(producers.length);
         await addProducer(producer, roomName, kind);
-        console.log(producers.length)
+        console.log(producers.length);
         await informConsumers(roomName, socket.id, producer.id, kind);
 
         // console.log('Producer ID: ', producer.id, producer.kind);
@@ -643,13 +640,13 @@ io.on("connection", function (socket) {
     async ({ dtlsParameters, serverConsumerTransportId }) => {
       try {
         // console.log(`DTLS PARAMS: ${dtlsParameters}`)
-        const consumerTransport = await transports.find(
-          (transportData) => {
-            // console.log(transportData);
-            return (transportData.consumer &&
-              transportData.transport.id == serverConsumerTransportId)
-          }
-        )?.transport;
+        const consumerTransport = await transports.find((transportData) => {
+          // console.log(transportData);
+          return (
+            transportData.consumer &&
+            transportData.transport.id == serverConsumerTransportId
+          );
+        })?.transport;
         await consumerTransport.connect({ dtlsParameters });
       } catch (e) {
         console.log("transport-recv-connect소켓", e);
@@ -669,14 +666,17 @@ io.on("connection", function (socket) {
   };
 
   const addProducer = (producer, roomName, kind) => {
-    producers = [...producers, { socketId: socket.id, producer, roomName, kind}];
+    producers = [
+      ...producers,
+      { socketId: socket.id, producer, roomName, kind },
+    ];
 
     peers[socket.id] = {
       ...peers[socket.id],
       producers: [...peers[socket.id].producers, producer.id],
     };
   };
-  socket.on("getProducers", ({kind}, callback) => {
+  socket.on("getProducers", ({ kind }, callback) => {
     //return all producer transports
     // consumer가 호출
     console.log(kind);
@@ -687,7 +687,7 @@ io.on("connection", function (socket) {
       if (
         producerData.socketId !== socket.id &&
         producerData.roomName === roomName &&
-        producerData.kind === kind 
+        producerData.kind === kind
       ) {
         producerList = [
           ...producerList,
@@ -715,7 +715,7 @@ io.on("connection", function (socket) {
         producerData.kind === kind
       ) {
         const producerSocket = peers[producerData.socketId].socket;
-        console.log(`inform 몇 번: socket.id ${socket.id}` );
+        console.log(`inform 몇 번: socket.id ${socket.id}`);
         // use socket to send producer id to producer
         producerSocket.emit("new-producer", {
           producerId: id,
@@ -868,7 +868,7 @@ io.on("connection", function (socket) {
 
   socket.on("leave_Group", (removeSid) => {
     console.log("그룹을 나가는 유저의 sid = ", removeSid);
-    const leaveUser = charMap[removeSid]
+    const leaveUser = charMap[removeSid];
     socket.to(leaveUser?.roomId).emit("remove_reduplication", socket?.id);
     // 그룹 넘버 초기화
     removeUser(removeSid);
@@ -903,7 +903,7 @@ io.on("connection", function (socket) {
           }
         }
       }
-      
+
       // console.log(groupObjArr);
       for (let i = 0; i < deleted.length; i++) {
         // for 빈 소켓 룸([]) 삭제 2
@@ -971,7 +971,7 @@ function makeGroup(socket) {
       ],
     };
 
-    console.log("-----------", groupName)
+    console.log("-----------", groupName);
     groupObjArr.push(initGroupObj);
 
     socket.join(groupName);
@@ -992,7 +992,7 @@ function joinGroup(groupName, socket, nickname) {
         `${i} 방 안에 있는 모든 유저의 소켓ID : `,
         groupObjArr[i].users
       );
-      console.log(groupObjArr[i], groupName)
+      console.log(groupObjArr[i], groupName);
       if (groupObjArr[i].groupName === groupName) {
         // Reject join the room
         // if (groupObjArr[i].users.length >= MAXIMUM) {
