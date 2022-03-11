@@ -26,25 +26,25 @@ const app = express();
 const PORT = 8000;
 
 const options = {
-  key: fs.readFileSync(config.sslKey),
-  cert: fs.readFileSync(config.sslCrt),
+  // key: fs.readFileSync(config.sslKey),
+  // cert: fs.readFileSync(config.sslCrt),
 };
 
-// const httpServer = http.createServer(app);
-// const io = require("socket.io")(httpServer, {
-//   cors: {
-//     origin: ["http://localhost:3000", "https://dev-team-aim.com"],
-//     credentials: true,
-//   },
-// });
-
-const httpsServer = https.createServer(options, app);
-const io = require("socket.io")(httpsServer, {
+const httpServer = http.createServer(app);
+const io = require("socket.io")(httpServer, {
   cors: {
     origin: ["http://localhost:3000", "https://dev-team-aim.com"],
     credentials: true,
   },
 });
+
+// const httpsServer = https.createServer(options, app);
+// const io = require("socket.io")(httpsServer, {
+//   cors: {
+//     origin: ["http://localhost:3000", "https://dev-team-aim.com"],
+//     credentials: true,
+//   },
+// });
 
 // WebRTC SFU (mediasoup)
 let worker;
@@ -148,13 +148,13 @@ app.use(function (err, req, res, next) {
   res.render("error");
 });
 
-// httpServer.listen(process.env.PORT || 8000, () => {
-//   console.log(`Server running on ${PORT}`);
-// });
-
-httpsServer.listen(process.env.PORT || 8000, () => {
+httpServer.listen(process.env.PORT || 8000, () => {
   console.log(`Server running on ${PORT}`);
 });
+
+// httpsServer.listen(process.env.PORT || 8000, () => {
+//   console.log(`Server running on ${PORT}`);
+// });
 
 class GameObject {
   constructor(socket) {
@@ -311,12 +311,14 @@ io.on("connection", function (socket) {
     try {
       console.log(`${socket.id} has leaved ${reason}!`);
       const leaveUser = charMap[socket.id];
-      socket.to(leaveUser.roomId).emit("leave_user", {
-        id: socket.id,
-        nickname: leaveUser.nickname,
-      });
+      // socket.to(leaveUser.roomId).emit("leave_user", {
+      //   id: socket.id,
+      //   nickname: leaveUser.nickname,
+      // });
+
       socket.to(leaveUser?.roomId).emit("remove_reduplication", socket?.id);
       leaveGame(socket);
+      socket.to(leaveUser?.roomId).emit("update_closer");
       // if (peers[socket?.id]) {
       removeUser(socket.id);
 
@@ -687,6 +689,7 @@ io.on("connection", function (socket) {
   socket.on("getProducers", ({ kind }, callback) => {
     //return all producer transports
     // consumer가 호출
+    try {
     console.log(kind);
     const { roomName } = peers[socket.id];
 
@@ -710,6 +713,9 @@ io.on("connection", function (socket) {
     // console.log("^^^^^^^^^^^^^^^^^^ producerList : ", producerList);
     // return the producer list back to the client
     callback(producerList);
+  } catch (e) {
+    console.log("getProducer", e);
+  }
   });
 
   const informConsumers = (roomName, socketId, id, kind) => {
