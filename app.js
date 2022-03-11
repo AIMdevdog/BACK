@@ -308,21 +308,20 @@ const { mediaCodecs } = config.mediasoup.router;
 io.on("connection", function (socket) {
   console.log(`${socket?.id} has joined!`);
   socket.on("disconnect", function (reason) {
+    console.log(`${socket.id} has leaved ${reason}!`);
+    const leaveUser = charMap[socket.id];
+    leaveGame(socket);
+    removeDrawUser(leaveUser.nickname);
+    socket.to(leaveUser.roomId).emit("leave_user", {
+      id: socket.id,
+      nickname: leaveUser.nickname,
+    });
     try {
-      console.log(`${socket.id} has leaved ${reason}!`);
-      const leaveUser = charMap[socket.id];
-      // socket.to(leaveUser.roomId).emit("leave_user", {
-      //   id: socket.id,
-      //   nickname: leaveUser.nickname,
-      // });
-
-      socket.to(leaveUser?.roomId).emit("remove_reduplication", socket?.id);
-      leaveGame(socket);
-      socket.to(leaveUser?.roomId).emit("update_closer");
       // if (peers[socket?.id]) {
-      removeUser(socket.id);
-
-      removeDrawUser(leaveUser.nickname);
+        removeUser(socket.id);
+        
+        socket.to(leaveUser?.roomId).emit("update_closer");
+        socket.to(leaveUser?.roomId).emit("remove_reduplication", socket?.id);
       // }
     } catch (e) {
       console.log("disconnect소켓", e);
