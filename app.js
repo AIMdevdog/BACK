@@ -307,6 +307,13 @@ const { mediaCodecs } = config.mediasoup.router;
 
 io.on("connection", function (socket) {
   console.log(`${socket?.id} has joined!`);
+
+  socket.on("connect_error", () => {
+    setTimeout(() => {
+      socket.connect();
+    }, 1000);
+  });
+  
   socket.on("disconnect", function (reason) {
     console.log(`${socket.id} has leaved ${reason}!`);
     const leaveUser = charMap[socket.id];
