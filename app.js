@@ -309,15 +309,8 @@ io.on("connection", function (socket) {
   console.log(`${socket?.id} has joined!`);
 
   socket.on("connect_error", () => {
-    setTimeout(() => {
-      socket.connect();
-    }, 1000);
-  });
-  
-  socket.on("disconnect", function (reason) {
     console.log(`${socket.id} has leaved ${reason}!`);
     const leaveUser = charMap[socket.id];
-    leaveGame(socket);
     removeDrawUser(leaveUser.nickname);
     socket.to(leaveUser.roomId).emit("leave_user", {
       id: socket.id,
@@ -329,11 +322,36 @@ io.on("connection", function (socket) {
         
         socket.to(leaveUser?.roomId).emit("update_closer");
         socket.to(leaveUser?.roomId).emit("remove_reduplication", socket?.id);
-      // }
-    } catch (e) {
-      console.log("disconnect소켓", e);
-    }
+        // }
+      } catch (e) {
+        console.log("disconnect소켓", e);
+      }
+      leaveGame(socket);
+      setTimeout(() => {
+      socket.connect();
+    }, 1000);
   });
+
+  socket.on("disconnect", function (reason) {
+    console.log(`${socket.id} has leaved ${reason}!`);
+    const leaveUser = charMap[socket.id];
+    removeDrawUser(leaveUser.nickname);
+    socket.to(leaveUser.roomId).emit("leave_user", {
+      id: socket.id,
+      nickname: leaveUser.nickname,
+    });
+    try {
+      // if (peers[socket?.id]) {
+        removeUser(socket.id);
+        
+        socket.to(leaveUser?.roomId).emit("update_closer");
+        socket.to(leaveUser?.roomId).emit("remove_reduplication", socket?.id);
+        // }
+      } catch (e) {
+        console.log("disconnect소켓", e);
+      }
+      leaveGame(socket);
+    });
 
   socket.on("input", function (data) {
     onInput(socket, data);
