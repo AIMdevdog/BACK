@@ -689,7 +689,6 @@ io.on("connection", function (socket) {
   socket.on("getProducers", ({ kind }, callback) => {
     //return all producer transports
     // consumer가 호출
-    try {
     console.log(kind);
     const { roomName } = peers[socket.id];
 
@@ -713,9 +712,6 @@ io.on("connection", function (socket) {
     // console.log("^^^^^^^^^^^^^^^^^^ producerList : ", producerList);
     // return the producer list back to the client
     callback(producerList);
-  } catch (e) {
-    console.log("getProducer", e);
-  }
   });
 
   const informConsumers = (roomName, socketId, id, kind) => {
