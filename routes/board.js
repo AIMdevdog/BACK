@@ -15,7 +15,7 @@ const router = express.Router();
 
 // router.post("/test", ())
 
-router.get("/read/:roomId", authUser, async (req, res) => {
+router.get("/:roomId", authUser, async (req, res) => {
   const { roomId } = req.params;
   try {
     const boards = await Aim_board.findAll({
@@ -36,7 +36,7 @@ router.get("/read/:roomId", authUser, async (req, res) => {
   }
 });
 
-router.post("/create", authUser, async (req, res) => {
+router.post("/", authUser, async (req, res) => {
   try {
     const { accessToken } = req.user;
     const { roomId, contents } = req.body;
@@ -62,7 +62,7 @@ router.post("/create", authUser, async (req, res) => {
   }
 });
 
-router.put("/update", authUser, async (req, res) => {
+router.put("/", authUser, async (req, res) => {
   try {
     const { boardId, contents } = req.body;
     const findBoard = await Aim_board.findOne({
@@ -83,7 +83,7 @@ router.put("/update", authUser, async (req, res) => {
   }
 });
 
-router.post("/delete", authUser, async (req, res) => {
+router.delete("/", authUser, async (req, res) => {
   try {
     const { boardId } = req.body;
     const result = await Aim_board.findOne({

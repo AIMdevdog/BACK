@@ -177,7 +177,7 @@ router.post("/auth/google", async function (req, res, next) {
 });
 
 /* GET users listing. */
-router.post("/update/profile", authUser, async function (req, res) {
+router.put("/profile", authUser, async function (req, res) {
   const { nickname, character } = req.body;
   // console.log("success");
   try {
@@ -202,7 +202,7 @@ router.post("/update/profile", authUser, async function (req, res) {
 });
 
 /* GET users listing. */
-router.get("/get/userinfo", authUser, async function (req, res) {
+router.get("/userinfo", authUser, async function (req, res) {
   try {
     //여기의 버튼은 회원가입이 안되어있으면 못들어오는 페이지 => email check 안해도 될 듯함
     if (req.user) {
