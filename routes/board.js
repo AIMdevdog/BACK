@@ -83,9 +83,9 @@ router.put("/", authUser, async (req, res) => {
   }
 });
 
-router.delete("/", authUser, async (req, res) => {
+router.delete("/:boardId", authUser, async (req, res) => {
   try {
-    const { boardId } = req.body;
+    const { boardId } = req.params;
     const result = await Aim_board.findOne({
       where: {
         id: boardId,

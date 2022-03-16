@@ -46,9 +46,9 @@ router.get("/", async (req, res) => {
   }
 });
 
-router.delete("/", authUser, async (req, res) => {
+router.delete("/:roomId", authUser, async (req, res) => {
   try {
-    const { roomId } = req.body;
+    const { roomId } = req.params;
     console.log(roomId);
     const findUserRoom = await Aim_user_room.findOne({
       where: {
