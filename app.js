@@ -77,7 +77,7 @@ let charMap = {}; //character information (x,y 등등)
 
 /* for group call */
 let groupName = 0;
-const MAXIMUM = 10; //Call maximum
+const MAXIMUM = 5; //Call maximum
 let roomObjArr = {
   // {
   //   roomName,
@@ -99,7 +99,7 @@ let groupObjArr = [
   //       socketId,
   //       nickname,
   //     },
-  //   ],
+  //   ]
   // },
 ];
 const drawUser = { 1: [], 2: [], 3: [], 4: [], 5: [] };
@@ -345,7 +345,6 @@ io.on("connection", function (socket) {
         removeUser(socket.id);
         
         socket.to(leaveUser?.roomId).emit("update_closer");
-        socket.to(leaveUser?.roomId).emit("remove_reduplication", socket?.id);
         // }
       } catch (e) {
         console.log("disconnect소켓", e);
@@ -422,7 +421,7 @@ io.on("connection", function (socket) {
       if (guest_gN) {
         // 둘 중 한 명 Group 있을 때
         if (!host_gN) {
-          await joinGroup(guest_gN, user_caller.socket, user_callee.nickname);
+          await joinGroup(guest_gN, user_caller.socket, user_callee.nickname, 'notDecided');
           user_caller.groupNumber = guest_gN;
           console.log(user_caller.groupNumber, user_callee.groupNumber);
         } else {
@@ -430,12 +429,12 @@ io.on("connection", function (socket) {
           if (guest_gN != host_gN) {
             console.log("host, guest은 다른 그룹입니다.");
             if (guest_gN > host_gN) {
-              await removeUser(caller);
-              joinGroup(guest_gN, user_caller.socket, user_callee.nickname);
+              // await removeUser(caller); //부류의 맞게 설정
+              joinGroup(guest_gN, user_caller.socket, user_callee.nickname, 'notDecided');
               user_caller.groupName = guest_gN;
             } else {
-              await removeUser(callee);
-              joinGroup(host_gN, user_callee.socket, user.caller.nickname);
+              // await removeUser(callee); //부류의 맞게 설정
+              joinGroup(host_gN, user_callee.socket, user.caller.nickname, 'notDecided');
               user_callee.groupName = host_gN;
             }
           } else {
@@ -444,7 +443,7 @@ io.on("connection", function (socket) {
         }
       } else if (!host_gN) {
         // 둘 다 Group 없을 때 (guest X && host X)
-        user_caller.groupNumber = await makeGroup(user_caller.socket);
+        user_caller.groupNumber = await makeGroup(user_caller.socket, 'notDecided');
         console.log("Caller가 만든 그룹 번호 :", user_caller.groupNumber);
       } else {
         // guest X && host O
@@ -904,77 +903,40 @@ io.on("connection", function (socket) {
     }
   });
 
-  socket.on("leave_Group", (removeSid) => {
-    console.log("그룹을 나가는 유저의 sid = ", removeSid);
-    const leaveUser = charMap[removeSid];
-    socket.to(leaveUser?.roomId).emit("remove_reduplication", socket?.id);
-    // 그룹 넘버 초기화
-    removeUser(removeSid);
-  });
-
-  async function removeUser(removeSid) {
-    try {
-      let deleted = []; // player.id로 groupObjArr에서 roomName찾기
-      let findGroupName;
-      for (let i = 0; i < groupObjArr.length; i++) {
-        for (let j = 0; j < groupObjArr[i].users.length; j++) {
-          // 거리가 멀어질 player의 Sid로 화상통화 그룹 정보에 저장된 동일한 Sid를 찾아서 그룹에서 삭제해준다
-          if (removeSid === groupObjArr[i].users[j].socketId) {
-            findGroupName = groupObjArr[i].groupName;
-            socket.leave(findGroupName); //  socket Room 에서 삭제
-            // console.log("socket에서 잘 삭제됐는지?", socket.rooms);
-            console.log(
-              `[server] groupObjArr[${i}].users[${j}]를 삭제`,
-              groupObjArr[i].users[j]
-            );
-            groupObjArr[i].users.splice(j, 1); // 우리가 따로 저장했던 배열에서도 삭제
-            console.log(
-              `[server] groupObjArr[${i}].users`,
-              groupObjArr[i].users
-            );
-            if (groupObjArr[i].users.length === 0) {
-              // for 빈 소켓 룸([]) 삭제 1
-              deleted.push(i);
-            }
-            // console.log(groupObjArr[i].users);
-            break;
-          }
+  socket.on("leave_Group", (changeSFU) => {
+    let userCnt;
+    let findGroupName;
+    let removeId = socket.id;
+    console.log("그룹을 나가는 유저의 sid = ", removeId);
+    for (let i = 0; i < groupObjArr.length; i++) {
+      for (let j = 0; j < groupObjArr[i].users.length; j++) {
+        if (removeId === groupObjArr[i].users[j].socketId) {
+          userCnt = groupObjArr[i].currentNum;
+          findGroupName = groupObjArr[i].groupName;
+          break;
         }
       }
-
-      // console.log(groupObjArr);
-      for (let i = 0; i < deleted.length; i++) {
-        // for 빈 소켓 룸([]) 삭제 2
-        groupObjArr.splice(deleted[i], 1);
-      }
-
-      // WebRTC SFU (mediasoup)
-      // do some cleanup
-      consumers = await removeItems(consumers, removeSid, "consumer");
-      producers = await removeItems(producers, removeSid, "producer");
-      transports = await removeItems(transports, removeSid, "transport");
-      // console.log(
-      //   `consumers ${consumers}, producers ${producers}, transports ${transports}`
-      // );
-      const roomName = peers[removeSid].roomName;
-      delete peers[removeSid];
-
-      // remove socket from room
-      rooms[roomName] = {
-        router: rooms[roomName].router,
-        peers: rooms[roomName].peers.filter(
-          (socketId) => socketId !== removeSid
-        ),
-      };
-      // ^ WebRTC SFU (mediasoup) ^
-
-      console.log("____________leave_group____________");
-      socket.to(findGroupName).emit("leave_succ", { removeSid });
-      charMap[removeSid].groupNumber = 0;
-    } catch (e) {
-      console.log("removeUser함수", e);
     }
-  }
+    // changeSFU true and false
+    if (userCnt < MAXIMUM && changeSFU) {
+      console.log(`유저 ${userCnt}`);
+      removeMeshAll(findGroupName);
+    } else if (userCnt < MAXIMUM) {
+      removeMesh(removeId);
+    } else if (userCnt === MAXIMUM) {
+      // removeSFUAll(findGroupName); //함수 구현 필요
+    } else if (userCnt > MAXIMUM) {
+      console.log(`유저 ${userCnt}`);
+      removeSFU(removeId);
+    } else {
+      console.log('else');
+    }
+    // 1. userCnt > MAXIMUM => leaveSFU
+    // 2. userCnt === MAXUMUM => leaveSFUAll & call accept mesh 
+    // 3. userCnt < MAXUMUM => leaveMesh
+    // 4. userCnt < MAXIMUM && changeSFU => leaveMeshAll & return true   
+  });
+
 });
 
 const removeItems = (items, socketId, type) => {
@@ -992,15 +954,142 @@ const removeItems = (items, socketId, type) => {
   }
 };
 
+  async function removeSFUAll(groupName) {
+    console.log('groupName :', groupName)
+    
+    for (let i = 0; i < groupObjArr.length; i++) {
+      if (groupObjArr[i].groupName === groupName) {
+        const groupNameNow = await makeGroup(groupObjArr[i].users[0].socket)
+        for (let j=1; j < groupObjArr[i].users.length; j++) {
+          await joinGroup(groupName, groupObjArr[i].users[j].socket, nickname)
+        }
+      };
+    };
+  };
+
+async function removeMeshAll(groupName) {
+  console.log('groupName :', groupName)
+  io.in(groupName).socketsLeave(groupName);
+  for (let i = 0; i < groupObjArr.length; i++) {
+    if (groupObjArr[i].groupName === groupName) {
+      const user = charMap[groupObjArr[i].users[0].socketId];
+      const groupNameNow = await makeGroup(user.socket, 'sfu') //강제 sfu 
+      for (let j=1; j < groupObjArr[i].users.length; j++) {
+        const user2 = charMap[groupObjArr[i].users[j].socketId];
+        await joinGroup(groupNameNow, user2.socket, user2.nickname, 'sfu')
+      }
+    };
+  };
+};
+
+async function removeMesh(removeSid) {
+  try {
+    let deleted = [];
+    let findGroupName;
+    for (let i = 0; i < groupObjArr.length; i++) {
+      for (let j = 0; j < groupObjArr[i].users.length; j++) {
+        if (removeSid === groupObjArr[i].users[j].socketId) {
+          findGroupName = groupObjArr[i].groupName;
+          socket.leave(findGroupName); //  socket Room 에서 삭제
+          groupObjArr[i].users.splice(j, 1); // 우리가 따로 저장했던 배열에서도 삭제
+          groupObjArr[i].currentNum -= 1
+          if (groupObjArr[i].users.length === 0) {
+            // for 빈 소켓 룸([]) 삭제 1
+            deleted.push(i);
+          }
+          break;
+        }
+      }
+    }
+    for (let i = 0; i < deleted.length; i++) {
+      groupObjArr.splice(deleted[i], 1);
+    }
+    console.log("____________remove_mesh____________");
+    socket.to(findGroupName).emit("leave_succ", {
+      removeSid,
+    });
+    charMap[removeSid].groupNumber = 0;
+  } catch (e) {
+    console.log(e)
+  }
+}
+
+
+async function removeSFU(removeSid) {
+  try {
+    let deleted = []; // player.id로 groupObjArr에서 roomName찾기
+    let findGroupName;
+    for (let i = 0; i < groupObjArr.length; i++) {
+      for (let j = 0; j < groupObjArr[i].users.length; j++) {
+        // 거리가 멀어질 player의 Sid로 화상통화 그룹 정보에 저장된 동일한 Sid를 찾아서 그룹에서 삭제해준다
+        if (removeSid === groupObjArr[i].users[j].socketId) {
+          findGroupName = groupObjArr[i].groupName;
+          socket.leave(findGroupName); //  socket Room 에서 삭제
+          // console.log("socket에서 잘 삭제됐는지?", socket.rooms);
+          console.log(
+            `[server] groupObjArr[${i}].users[${j}]를 삭제`,
+            groupObjArr[i].users[j]
+          );
+          groupObjArr[i].users.splice(j, 1); // 우리가 따로 저장했던 배열에서도 삭제
+          groupObjArr[i].currentNum -= 1;
+          console.log(
+            `[server] groupObjArr[${i}].users`,
+            groupObjArr[i].users
+          );
+          if (groupObjArr[i].users.length === 0) {
+            // for 빈 소켓 룸([]) 삭제 1
+            deleted.push(i);
+          }
+          // console.log(groupObjArr[i].users);
+          break;
+        }
+      }
+    }
+
+    // console.log(groupObjArr);
+    for (let i = 0; i < deleted.length; i++) {
+      // for 빈 소켓 룸([]) 삭제 2
+      groupObjArr.splice(deleted[i], 1);
+    }
+
+    // WebRTC SFU (mediasoup)
+    // do some cleanup
+    consumers = await removeItems(consumers, removeSid, "consumer");
+    producers = await removeItems(producers, removeSid, "producer");
+    transports = await removeItems(transports, removeSid, "transport");
+    // console.log(
+    //   `consumers ${consumers}, producers ${producers}, transports ${transports}`
+    // );
+    const roomName = peers[removeSid].roomName;
+    delete peers[removeSid];
+
+    // remove socket from room
+    rooms[roomName] = {
+      router: rooms[roomName].router,
+      peers: rooms[roomName].peers.filter(
+        (socketId) => socketId !== removeSid
+      ),
+    };
+    // ^ WebRTC SFU (mediasoup) ^
+
+    console.log("____________leave_group____________");
+    socket.to(findGroupName).emit("leave_succ", { removeSid });
+    charMap[removeSid].groupNumber = 0;
+  } catch (e) {
+    console.log("removeUser함수", e);
+  }
+}
+
+
 //when caller make the room
-function makeGroup(socket) {
+function makeGroup(socket, method) {
   try {
     console.log("makeGroup");
     const user = charMap[socket.id];
     user.groupNumber = ++groupName;
     initGroupObj = {
       groupName: groupName,
-      currentNum: 0,
+      currentNum: 1,
       users: [
         {
           socketId: socket.id,
@@ -1014,7 +1103,12 @@ function makeGroup(socket) {
 
     socket.join(groupName);
     // console.log("join:", groupName);
-    socket.emit("accept_join", initGroupObj.groupName);
+    if (method === 'sfu') {
+      socket.emit("accept_join_sfu", initGroupObj.groupName);
+    } else if (method === 'mesh' || method === 'notDecided') {
+      // socket.emit("accept_join_mesh", [1])
+      console.log(`${groupName} 그룹이 생성하였습니다. `)
+    } 
     return groupName;
   } catch (e) {
     console.log("makeGroup함수", e);
@@ -1022,7 +1116,7 @@ function makeGroup(socket) {
 }
 
 //when callee join the room
-function joinGroup(groupName, socket, nickname) {
+function joinGroup(groupName, socket, nickname, method) {
   try {
     console.log("joinGroup");
     for (let i = 0; i < groupObjArr.length; ++i) {
@@ -1032,19 +1126,39 @@ function joinGroup(groupName, socket, nickname) {
       );
       console.log(groupObjArr[i], groupName);
       if (groupObjArr[i].groupName === groupName) {
-        // Reject join the room
-        // if (groupObjArr[i].users.length >= MAXIMUM) {
-        //   socket.emit("reject_join");
-        //   return;
-        // }
-        //Join the room
         groupObjArr[i].users.push({
           socketId: socket.id,
           nickname,
         });
+        groupObjArr[i].currentNum += 1;
+        let findGroupName = groupObjArr[i].groupName;
+        let findGroupUsers = groupObjArr[i].users;
 
-        socket.join(groupName);
-        socket.emit("accept_join", groupObjArr[i].groupName);
+        if (method === 'sfu') { //강제 sfu
+          socket.join(groupName);
+          socket.emit("accept_join_sfu", findGroupName);
+
+        } else if (method === 'mesh') { //강제 mesh
+          socket.join(groupName);
+          socket.emit("accept_join_mesh", findGroupUsers);    
+
+        } else { // group의 users의 수로 판단
+          
+          if (findGroupUsers.length < MAXIMUM) {
+            socket.join(groupName);
+            socket.emit("accept_join_mesh", findGroupUsers); 
+
+          } else if (findGroupUsers.length === MAXIMUM) {
+            console.log("찍히니?")
+            io.in(findGroupName).emit("leave_all", findGroupUsers) //removeUser를 통해 태그를 다 지운다. 
+            removeMeshAll(groupName);
+          
+          } else {
+            //SFU
+            socket.join(groupName);
+            socket.emit("accept_join_sfu", findGroupName);
+          }
+        }
       }
     }
   } catch (e) {
