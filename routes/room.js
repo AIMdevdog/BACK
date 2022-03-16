@@ -16,7 +16,7 @@ router.get("/", authUser, async (req, res) => {
   }
 });
 
-router.post("/create", authUser, async (req, res) => {
+router.post("/", authUser, async (req, res) => {
   try {
     const { mapId, title, description } = req.body;
 

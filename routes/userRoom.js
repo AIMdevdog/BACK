@@ -46,7 +46,7 @@ router.get("/", async (req, res) => {
   }
 });
 
-router.post("/delete", authUser, async (req, res) => {
+router.delete("/", authUser, async (req, res) => {
   try {
     const { roomId } = req.body;
     console.log(roomId);
