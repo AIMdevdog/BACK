@@ -23,7 +23,8 @@
 ---
 
 # ⚙️ 서비스 구조도(아키텍쳐)
-![Group 221](https://user-images.githubusercontent.com/45518265/158076085-3ada3235-114e-4517-8676-ee3e9c317e06.png)
+<img width="681" alt="AiM아키텍쳐" src="https://user-images.githubusercontent.com/93559998/179405219-b60c4d71-51e3-4f3e-86b1-498cfa058f84.png">
+
 ---
 
 # 🪧 포스터
